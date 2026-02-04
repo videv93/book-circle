@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { signIn } from '@/lib/auth-client';
 import { logError } from '@/lib/error-logging';
+import type { OAuthProvider } from './types';
 
 function GoogleIcon({ className }: { className?: string }) {
   return (
@@ -28,38 +29,52 @@ function GoogleIcon({ className }: { className?: string }) {
   );
 }
 
+function AppleIcon({ className }: { className?: string }) {
+  // Official Apple logo for Sign In with Apple
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z" />
+    </svg>
+  );
+}
+
 interface OAuthButtonsProps {
   callbackUrl?: string;
 }
 
 export function OAuthButtons({ callbackUrl }: OAuthButtonsProps) {
-  const [isLoading, setIsLoading] = useState(false);
+  const [loadingProvider, setLoadingProvider] = useState<OAuthProvider | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const handleGoogleSignIn = async () => {
+  const handleSignIn = async (provider: OAuthProvider) => {
     try {
-      setIsLoading(true);
+      setLoadingProvider(provider);
       setError(null);
       await signIn.social({
-        provider: 'google',
+        provider,
         callbackURL: callbackUrl || '/home',
       });
     } catch (err) {
-      logError(err, { provider: 'google', callbackUrl });
-      setError('Failed to sign in with Google. Please try again.');
-      setIsLoading(false);
+      logError(err, { provider, callbackUrl });
+      const providerName = provider === 'google' ? 'Google' : 'Apple';
+      setError(`Failed to sign in with ${providerName}. Please try again.`);
+      setLoadingProvider(null);
     }
   };
 
+  const isLoading = loadingProvider !== null;
+
   return (
     <div className="flex flex-col gap-4">
+      {/* Google Sign In Button */}
       <Button
         variant="outline"
-        className="w-full border-gray-300 hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-800"
-        onClick={handleGoogleSignIn}
+        className="w-full border-gray-300 hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-800 min-h-[44px]"
+        onClick={() => handleSignIn('google')}
         disabled={isLoading}
+        aria-label="Continue with Google"
       >
-        {isLoading ? (
+        {loadingProvider === 'google' ? (
           <span className="flex items-center gap-2">
             <span className="h-5 w-5 animate-spin rounded-full border-2 border-current border-t-transparent" />
             Signing in...
@@ -71,6 +86,28 @@ export function OAuthButtons({ callbackUrl }: OAuthButtonsProps) {
           </>
         )}
       </Button>
+
+      {/* Apple Sign In Button - follows Apple HIG guidelines */}
+      <Button
+        variant="outline"
+        className="w-full bg-black text-white hover:bg-gray-900 border-black dark:bg-white dark:text-black dark:hover:bg-gray-100 dark:border-white min-h-[44px]"
+        onClick={() => handleSignIn('apple')}
+        disabled={isLoading}
+        aria-label="Continue with Apple"
+      >
+        {loadingProvider === 'apple' ? (
+          <span className="flex items-center gap-2">
+            <span className="h-5 w-5 animate-spin rounded-full border-2 border-current border-t-transparent" />
+            Signing in...
+          </span>
+        ) : (
+          <>
+            <AppleIcon className="h-5 w-5" />
+            Continue with Apple
+          </>
+        )}
+      </Button>
+
       {error && (
         <p className="text-sm text-destructive text-center" role="alert">
           {error}

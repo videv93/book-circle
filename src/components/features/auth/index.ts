@@ -1,2 +1,12 @@
 export { OAuthButtons } from './OAuthButtons';
-export type { User, Session, AuthContextValue, OAuthButtonsProps } from './types';
+export {
+  isApplePrivateRelayEmail,
+} from './types';
+export type {
+  User,
+  Session,
+  AuthContextValue,
+  OAuthButtonsProps,
+  OAuthProvider,
+  AppleAuthUser,
+} from './types';

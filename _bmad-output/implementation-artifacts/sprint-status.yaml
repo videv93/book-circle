@@ -42,7 +42,7 @@ development_status:
   epic-1: in-progress
   1-1-project-initialization-core-infrastructure: in-progress
   1-2-oauth-authentication-with-google: done
-  1-3-oauth-authentication-with-apple: backlog
+  1-3-oauth-authentication-with-apple: done
   1-4-user-profile-management: backlog
   1-5-bottom-navigation-app-shell: backlog
   epic-1-retrospective: optional
