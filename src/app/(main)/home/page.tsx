@@ -11,7 +11,7 @@ export default function HomePage() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
+      <div className="flex min-h-[50vh] items-center justify-center">
         <span className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
       </div>
     );
@@ -23,9 +23,11 @@ export default function HomePage() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center gap-6 p-4">
+    <div className="flex flex-col items-center justify-center gap-6 p-4 pt-8">
       <div className="text-center">
-        <h1 className="text-3xl font-bold text-foreground">Welcome Home</h1>
+        <h2 className="text-2xl font-semibold text-foreground">
+          Welcome{user?.name ? `, ${user.name}` : ''}!
+        </h2>
         {user && (
           <div className="mt-4 flex flex-col items-center gap-2">
             {user.image && (
@@ -37,7 +39,6 @@ export default function HomePage() {
                 className="h-16 w-16 rounded-full"
               />
             )}
-            <p className="text-lg text-foreground">{user.name || 'Reader'}</p>
             <p className="text-sm text-muted-foreground">{user.email}</p>
           </div>
         )}

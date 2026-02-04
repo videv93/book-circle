@@ -1,14 +1,40 @@
-import type { Metadata } from 'next';
+'use client';
 
-export const metadata: Metadata = {
-  title: 'Home - Flappy Bird',
-  description: 'Your reading dashboard',
+import { usePathname } from 'next/navigation';
+import { AppShell } from '@/components/layout';
+
+// Page title mapping
+const PAGE_TITLES: Record<string, string> = {
+  '/home': 'Home',
+  '/search': 'Search',
+  '/library': 'Library',
+  '/activity': 'Activity',
+  '/profile': 'Profile',
 };
+
+function getPageTitle(pathname: string): string {
+  // Check for exact match first
+  if (PAGE_TITLES[pathname]) {
+    return PAGE_TITLES[pathname];
+  }
+
+  // Check for prefix match (for nested routes)
+  for (const [path, title] of Object.entries(PAGE_TITLES)) {
+    if (pathname.startsWith(path)) {
+      return title;
+    }
+  }
+
+  return 'Flappy Bird';
+}
 
 export default function MainLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  return <div className="min-h-screen bg-background">{children}</div>;
+  const pathname = usePathname();
+  const title = getPageTitle(pathname);
+
+  return <AppShell title={title}>{children}</AppShell>;
 }
