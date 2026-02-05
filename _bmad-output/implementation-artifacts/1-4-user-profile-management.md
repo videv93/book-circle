@@ -1,6 +1,6 @@
 # Story 1.4: User Profile Management
 
-Status: review
+Status: done
 
 ## Story
 
@@ -445,6 +445,7 @@ Claude Opus 4.5 (claude-opus-4-5-20251101)
 
 **New Files:**
 - prisma/migrations/20260204152154_add_profile_fields/migration.sql
+- prisma/migrations/migration_lock.toml
 - src/lib/validation/profile.ts
 - src/lib/config/genres.ts
 - src/lib/config/index.ts
@@ -470,10 +471,16 @@ Claude Opus 4.5 (claude-opus-4-5-20251101)
 **Modified Files:**
 - prisma/schema.prisma (added favoriteGenres and showReadingActivity fields)
 - vitest.setup.ts (added ResizeObserver mock)
-- .env (updated DATABASE_URL for local development)
-- .env.local (updated DATABASE_URL for local development)
+- _bmad-output/implementation-artifacts/sprint-status.yaml (story status tracking)
+
+Note: .env and .env.local were updated locally but are gitignored (not committed).
 
 ## Change Log
+
+- 2026-02-05: Code Review - Fixed Medium issues
+  - **FIX:** Added Zod schema defaults for favoriteGenres and showReadingActivity per architecture spec
+  - **FIX:** Updated File List documentation (added migration_lock.toml, sprint-status.yaml, clarified .env files)
+  - **FIX:** Fixed AppShell.tsx lint warning (from Story 1.5) - copied ref value to variable in effect cleanup
 
 - 2026-02-04: Implemented Story 1.4 - User Profile Management
   - Added profile fields to database schema

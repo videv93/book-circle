@@ -24,12 +24,13 @@ export function AppShell({ children, title, leftSlot, rightSlot }: AppShellProps
 
   // Save scroll position on route change
   useEffect(() => {
-    // Save current scroll position for current route
+    // Copy ref value to variable for cleanup function
+    const positions = scrollPositions.current;
     const currentPathname = pathname;
 
     return () => {
       // Save scroll position when leaving this route
-      scrollPositions.current.set(currentPathname, window.scrollY);
+      positions.set(currentPathname, window.scrollY);
     };
   }, [pathname]);
 

@@ -10,8 +10,8 @@ export const profileSchema = z.object({
     .max(200, 'Bio must be 200 characters or less')
     .optional()
     .nullable(),
-  favoriteGenres: z.array(z.string()),
-  showReadingActivity: z.boolean(),
+  favoriteGenres: z.array(z.string()).default([]),
+  showReadingActivity: z.boolean().default(true),
 });
 
 // Type for form input - matches what the form handles
