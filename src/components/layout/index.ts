@@ -3,6 +3,7 @@ export { BottomNav } from './BottomNav';
 export { PageHeader } from './PageHeader';
 export { AppShell } from './AppShell';
 export { SideNav } from './SideNav';
+export { BackButton } from './BackButton';
 
 // Types
 export type { NavItem, PageHeaderProps, AppShellProps } from './types';

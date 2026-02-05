@@ -12,6 +12,7 @@ export type {
   UserBookWithBook,
   UserBookStatus,
 } from '@/actions/books/types';
+export type { BookDetailData } from '@/actions/books/getBookById';
 
 // Component-specific types
 export type SearchState = 'idle' | 'loading' | 'success' | 'error' | 'empty';

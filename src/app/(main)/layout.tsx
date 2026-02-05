@@ -12,7 +12,12 @@ const PAGE_TITLES: Record<string, string> = {
   '/profile': 'Profile',
 };
 
-function getPageTitle(pathname: string): string {
+function getPageTitle(pathname: string): string | undefined {
+  // Book detail page handles its own header
+  if (pathname.startsWith('/book/')) {
+    return undefined;
+  }
+
   // Check for exact match first
   if (PAGE_TITLES[pathname]) {
     return PAGE_TITLES[pathname];

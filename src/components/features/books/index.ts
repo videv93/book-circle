@@ -10,6 +10,15 @@ export { BookSearchError } from './BookSearchError';
 export { AddToLibraryButton } from './AddToLibraryButton';
 export { ReadingStatusSelector } from './ReadingStatusSelector';
 
+// Book detail components
+export { BookDetail } from './BookDetail';
+export { BookDetailHero } from './BookDetailHero';
+export { BookDetailSkeleton } from './BookDetailSkeleton';
+export { BookDescription } from './BookDescription';
+export { AuthorVerifiedBadge } from './AuthorVerifiedBadge';
+export { BookReadersCount } from './BookReadersCount';
+export { BookDetailActions } from './BookDetailActions';
+
 // Types and constants
 export type {
   BookSearchResult as BookSearchResultType,
@@ -20,6 +29,7 @@ export type {
   UserBookWithBook,
   UserBookStatus,
   ReadingStatusOption,
+  BookDetailData,
 } from './types';
 export {
   READING_STATUS_LABELS,
