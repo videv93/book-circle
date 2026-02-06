@@ -172,4 +172,48 @@ describe('HomeContent', () => {
     expect(screen.getByTestId('streak-ring')).toBeInTheDocument();
     expect(screen.getByTestId('daily-goal-progress')).toBeInTheDocument();
   });
+
+  // Streak status messaging tests (Story 3.6)
+  it('shows streak at risk message when streak is at risk', () => {
+    render(
+      <HomeContent
+        {...defaultProps}
+        dailyGoalMinutes={30}
+        minutesRead={0}
+        currentStreak={5}
+        isStreakAtRisk={true}
+      />
+    );
+
+    expect(screen.getByTestId('streak-at-risk-message')).toBeInTheDocument();
+    expect(screen.getByText(/your book is waiting/i)).toBeInTheDocument();
+  });
+
+  it('does not show streak at risk message when streak is healthy', () => {
+    render(
+      <HomeContent
+        {...defaultProps}
+        dailyGoalMinutes={30}
+        minutesRead={10}
+        currentStreak={5}
+        isStreakAtRisk={false}
+      />
+    );
+
+    expect(screen.queryByTestId('streak-at-risk-message')).not.toBeInTheDocument();
+  });
+
+  it('does not show streak at risk message when streak is 0', () => {
+    render(
+      <HomeContent
+        {...defaultProps}
+        dailyGoalMinutes={30}
+        minutesRead={0}
+        currentStreak={0}
+        isStreakAtRisk={true}
+      />
+    );
+
+    expect(screen.queryByTestId('streak-at-risk-message')).not.toBeInTheDocument();
+  });
 });

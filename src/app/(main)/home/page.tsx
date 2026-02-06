@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { getDailyProgress } from '@/actions/goals';
-import { getStreakData } from '@/actions/streaks';
+import { getStreakData, checkStreakStatus } from '@/actions/streaks';
 import { HomeContent } from './HomeContent';
 
 export default async function HomePage() {
@@ -40,11 +40,18 @@ export default async function HomePage() {
   // Fetch streak data only when goal is set (StreakRing not rendered otherwise)
   let currentStreak = 0;
   let freezeUsedToday = false;
+  let isStreakAtRisk = false;
   if (user.dailyGoalMinutes) {
     const streakResult = await getStreakData();
     if (streakResult.success) {
       currentStreak = streakResult.data.currentStreak;
       freezeUsedToday = streakResult.data.freezeUsedToday;
+    }
+
+    // Check streak health for compassionate messaging
+    const statusResult = await checkStreakStatus({ timezone: 'UTC' });
+    if (statusResult.success) {
+      isStreakAtRisk = statusResult.data.isAtRisk;
     }
   }
 
@@ -58,6 +65,7 @@ export default async function HomePage() {
         minutesRead={minutesRead}
         currentStreak={currentStreak}
         freezeUsedToday={freezeUsedToday}
+        isStreakAtRisk={isStreakAtRisk}
       />
     </main>
   );

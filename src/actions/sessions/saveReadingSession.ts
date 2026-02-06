@@ -4,6 +4,8 @@ import { z } from 'zod';
 import { headers } from 'next/headers';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { updateStreakInternal } from '@/actions/streaks/updateStreakOnGoalMet';
+import type { StreakUpdateResult } from '@/actions/streaks/updateStreakOnGoalMet';
 import type { ReadingSession } from '@prisma/client';
 import type { ActionResult } from '@/actions/books/types';
 
@@ -12,18 +14,24 @@ const saveSessionSchema = z.object({
   duration: z.number().int().min(60, 'Sessions under 1 minute cannot be saved'),
   startedAt: z.string().datetime({ message: 'Invalid start time' }),
   endedAt: z.string().datetime({ message: 'Invalid end time' }),
+  timezone: z.string().optional().default('UTC'),
 });
 
 export type SaveReadingSessionInput = z.infer<typeof saveSessionSchema>;
+
+export type SaveReadingSessionResult = ReadingSession & {
+  streakUpdate?: StreakUpdateResult | null;
+};
 
 /**
  * Save a completed reading session to the database.
  * Validates minimum duration (60s), authenticates user,
  * and verifies the book is in the user's library.
+ * After saving, attempts to update the streak (non-blocking).
  */
 export async function saveReadingSession(
   input: SaveReadingSessionInput
-): Promise<ActionResult<ReadingSession>> {
+): Promise<ActionResult<SaveReadingSessionResult>> {
   try {
     const validated = saveSessionSchema.parse(input);
 
@@ -57,7 +65,15 @@ export async function saveReadingSession(
       },
     });
 
-    return { success: true, data: readingSession };
+    // Attempt streak update (non-blocking for session save)
+    let streakUpdate: StreakUpdateResult | null = null;
+    try {
+      streakUpdate = await updateStreakInternal(session.user.id, validated.timezone);
+    } catch (error) {
+      console.error('Streak update failed, session saved successfully:', error);
+    }
+
+    return { success: true, data: { ...readingSession, streakUpdate } };
   } catch (error) {
     if (error instanceof z.ZodError) {
       const durationError = error.issues.find((e) => e.path.includes('duration'));

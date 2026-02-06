@@ -37,6 +37,7 @@ model User {
   userBooks       UserBook[]
   readingSessions ReadingSession[]
   streak          UserStreak?
+  dailyProgress   DailyProgress[]
 
   @@map("users")
 }
@@ -140,6 +141,24 @@ model UserStreak {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("user_streaks")
+}
+
+model DailyProgress {
+  id          String   @id @default(cuid())
+  userId      String   @map("user_id")
+  date        DateTime // Midnight UTC representing the user's local date
+  minutesRead Int      @default(0) @map("minutes_read")
+  goalMet     Boolean  @default(false) @map("goal_met")
+  freezeUsed  Boolean  @default(false) @map("freeze_used")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+  @@index([userId])
+  @@index([userId, date])
+  @@map("daily_progress")
 }
 
 model UserBook {

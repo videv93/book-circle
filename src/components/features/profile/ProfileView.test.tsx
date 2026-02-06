@@ -4,6 +4,16 @@ import userEvent from '@testing-library/user-event';
 import { ProfileView } from './ProfileView';
 import type { User } from '@prisma/client';
 
+// Mock next/navigation
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({
+    push: vi.fn(),
+    refresh: vi.fn(),
+    replace: vi.fn(),
+    back: vi.fn(),
+  }),
+}));
+
 // Mock the updateProfile action
 const mockUpdateProfile = vi.fn();
 vi.mock('@/actions/profile', () => ({

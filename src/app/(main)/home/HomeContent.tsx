@@ -16,6 +16,7 @@ interface HomeContentProps {
   minutesRead: number;
   currentStreak: number;
   freezeUsedToday: boolean;
+  isStreakAtRisk?: boolean;
 }
 
 export function HomeContent({
@@ -26,6 +27,7 @@ export function HomeContent({
   minutesRead,
   currentStreak,
   freezeUsedToday,
+  isStreakAtRisk = false,
 }: HomeContentProps) {
   const router = useRouter();
 
@@ -72,6 +74,14 @@ export function HomeContent({
               size="lg"
             />
             <DailyGoalProgress minutesRead={minutesRead} goalMinutes={dailyGoalMinutes} />
+            {isStreakAtRisk && currentStreak > 0 && (
+              <p
+                className="text-sm text-muted-foreground text-center"
+                data-testid="streak-at-risk-message"
+              >
+                Your book is waiting — read today to keep your streak going!
+              </p>
+            )}
           </div>
         )}
       </div>

@@ -25,12 +25,24 @@ vi.mock('next/headers', () => ({
   headers: vi.fn(() => Promise.resolve(new Headers())),
 }));
 
+vi.mock('@/actions/streaks/updateStreakOnGoalMet', () => ({
+  updateStreakInternal: vi.fn().mockResolvedValue({
+    streakUpdated: false,
+    currentStreak: 0,
+    longestStreak: 0,
+    wasReset: false,
+    reason: 'goal_not_met',
+  }),
+}));
+
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
+import { updateStreakInternal } from '@/actions/streaks/updateStreakOnGoalMet';
 
 const mockAuth = vi.mocked(auth.api.getSession);
 const mockFindFirst = vi.mocked(prisma.userBook.findFirst);
 const mockCreate = vi.mocked(prisma.readingSession.create);
+const mockUpdateStreak = vi.mocked(updateStreakInternal);
 
 const validInput = {
   bookId: 'book-123',
@@ -160,5 +172,124 @@ describe('saveReadingSession', () => {
         deletedAt: null,
       },
     });
+  });
+
+  it('calls updateStreakInternal after successful save', async () => {
+    mockFindFirst.mockResolvedValue({
+      id: 'ub-1',
+      userId: 'user-1',
+      bookId: 'book-123',
+      status: 'CURRENTLY_READING',
+      progress: 50,
+      dateAdded: new Date(),
+      dateFinished: null,
+      deletedAt: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    mockCreate.mockResolvedValue({
+      id: 'rs-1',
+      userId: 'user-1',
+      bookId: 'book-123',
+      duration: 120,
+      startedAt: new Date(),
+      endedAt: new Date(),
+      syncedAt: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    mockUpdateStreak.mockResolvedValue({
+      streakUpdated: true,
+      currentStreak: 3,
+      longestStreak: 5,
+      wasReset: false,
+      reason: 'goal_met_streak_incremented',
+    });
+
+    const result = await saveReadingSession(validInput);
+
+    expect(result.success).toBe(true);
+    expect(mockUpdateStreak).toHaveBeenCalledWith('user-1', 'UTC');
+    if (result.success) {
+      expect(result.data.streakUpdate).toBeDefined();
+      expect(result.data.streakUpdate?.currentStreak).toBe(3);
+    }
+  });
+
+  it('succeeds even when streak update fails', async () => {
+    mockFindFirst.mockResolvedValue({
+      id: 'ub-1',
+      userId: 'user-1',
+      bookId: 'book-123',
+      status: 'CURRENTLY_READING',
+      progress: 50,
+      dateAdded: new Date(),
+      dateFinished: null,
+      deletedAt: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    mockCreate.mockResolvedValue({
+      id: 'rs-1',
+      userId: 'user-1',
+      bookId: 'book-123',
+      duration: 120,
+      startedAt: new Date(),
+      endedAt: new Date(),
+      syncedAt: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    mockUpdateStreak.mockRejectedValue(new Error('Streak DB error'));
+
+    const result = await saveReadingSession(validInput);
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.id).toBe('rs-1');
+      expect(result.data.streakUpdate).toBeNull();
+    }
+  });
+
+  it('includes streakUpdate result in successful response', async () => {
+    mockFindFirst.mockResolvedValue({
+      id: 'ub-1',
+      userId: 'user-1',
+      bookId: 'book-123',
+      status: 'CURRENTLY_READING',
+      progress: 50,
+      dateAdded: new Date(),
+      dateFinished: null,
+      deletedAt: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    mockCreate.mockResolvedValue({
+      id: 'rs-1',
+      userId: 'user-1',
+      bookId: 'book-123',
+      duration: 120,
+      startedAt: new Date(),
+      endedAt: new Date(),
+      syncedAt: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    mockUpdateStreak.mockResolvedValue({
+      streakUpdated: true,
+      currentStreak: 1,
+      longestStreak: 1,
+      wasReset: true,
+      reason: 'goal_met_streak_reset',
+      message: 'Fresh start! Day 1 of your new streak.',
+    });
+
+    const result = await saveReadingSession(validInput);
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.streakUpdate?.wasReset).toBe(true);
+      expect(result.data.streakUpdate?.message).toBe('Fresh start! Day 1 of your new streak.');
+    }
   });
 });
