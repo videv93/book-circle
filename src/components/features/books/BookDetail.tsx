@@ -84,8 +84,8 @@ export function BookDetail({ data, initialSessions = [], initialCursor = null }:
       />
 
       {isInLibrary && initialSessions.length > 0 && (
-        <div className="border-t border-border py-4" data-testid="book-sessions-section">
-          <h3 className="mb-3 text-sm font-medium text-muted-foreground">Your Sessions</h3>
+        <div className="border-t border-border px-4 py-4" data-testid="book-sessions-section">
+          <h3 className="text-sm font-medium text-muted-foreground">Your Sessions</h3>
           <SessionList
             bookId={book.id}
             initialSessions={initialSessions}
