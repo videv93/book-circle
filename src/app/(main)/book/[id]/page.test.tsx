@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, screen } from '@testing-library/react';
 import { notFound } from 'next/navigation';
 import BookPage, { generateMetadata } from './page';
 
@@ -114,15 +115,17 @@ describe('BookPage', () => {
       expect(notFound).toHaveBeenCalled();
     });
 
-    it('renders BookDetail when book is found', async () => {
+    it('renders BookDetail with correct data when book is found', async () => {
       vi.mocked(getBookById).mockResolvedValue(mockSuccessResult);
 
       const result = await BookPage({
         params: Promise.resolve({ id: 'book-123' }),
       });
 
-      // Verify the component tree contains BookDetail
-      expect(result).toBeTruthy();
+      // Render the server component output and verify BookDetail receives data
+      render(result as React.ReactElement);
+      expect(screen.getByTestId('book-detail')).toBeInTheDocument();
+      expect(screen.getByTestId('book-detail')).toHaveTextContent('Test Book');
     });
   });
 });

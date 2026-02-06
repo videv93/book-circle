@@ -54,22 +54,37 @@ vi.mock('./BookDetailActions', () => ({
     isInLibrary,
     currentStatus,
     progress,
+    userBookId,
     onStatusChange,
   }: {
     isInLibrary: boolean;
     currentStatus?: string;
     progress?: number;
-    onStatusChange?: (status: 'CURRENTLY_READING') => void;
+    userBookId?: string;
+    onStatusChange?: (status: 'CURRENTLY_READING' | 'FINISHED' | 'WANT_TO_READ') => void;
   }) => (
     <div data-testid="mock-actions">
       <span>{isInLibrary ? 'In Library' : 'Not In Library'}</span>
       {currentStatus && <span>Status: {currentStatus}</span>}
       {progress !== undefined && <span>Progress: {progress}%</span>}
+      {userBookId && <span data-testid="user-book-id">{userBookId}</span>}
       <button
         onClick={() => onStatusChange?.('CURRENTLY_READING')}
         data-testid="add-button"
       >
         Add
+      </button>
+      <button
+        onClick={() => onStatusChange?.('FINISHED')}
+        data-testid="finish-button"
+      >
+        Finish
+      </button>
+      <button
+        onClick={() => onStatusChange?.('WANT_TO_READ')}
+        data-testid="want-to-read-button"
+      >
+        Want to Read
       </button>
     </div>
   ),
@@ -208,5 +223,61 @@ describe('BookDetail', () => {
     expect(screen.getByTestId('mock-description')).toHaveTextContent(
       'ISBN: 0123456789'
     );
+  });
+
+  it('passes userBookId to actions component', () => {
+    const dataWithUserStatus: BookDetailData = {
+      ...mockData,
+      userStatus: {
+        isInLibrary: true,
+        status: 'CURRENTLY_READING',
+        progress: 50,
+        userBookId: 'userbook-123',
+      },
+    };
+
+    render(<BookDetail data={dataWithUserStatus} />);
+
+    expect(screen.getByTestId('user-book-id')).toHaveTextContent('userbook-123');
+  });
+
+  it('sets progress to 100 when status changes to FINISHED', async () => {
+    const user = userEvent.setup();
+    const dataWithUserStatus: BookDetailData = {
+      ...mockData,
+      userStatus: {
+        isInLibrary: true,
+        status: 'CURRENTLY_READING',
+        progress: 50,
+        userBookId: 'userbook-123',
+      },
+    };
+
+    render(<BookDetail data={dataWithUserStatus} />);
+
+    await user.click(screen.getByTestId('finish-button'));
+
+    expect(screen.getByTestId('mock-actions')).toHaveTextContent('Status: FINISHED');
+    expect(screen.getByTestId('mock-actions')).toHaveTextContent('Progress: 100%');
+  });
+
+  it('resets progress to 0 when status changes to WANT_TO_READ', async () => {
+    const user = userEvent.setup();
+    const dataWithUserStatus: BookDetailData = {
+      ...mockData,
+      userStatus: {
+        isInLibrary: true,
+        status: 'CURRENTLY_READING',
+        progress: 50,
+        userBookId: 'userbook-123',
+      },
+    };
+
+    render(<BookDetail data={dataWithUserStatus} />);
+
+    await user.click(screen.getByTestId('want-to-read-button'));
+
+    expect(screen.getByTestId('mock-actions')).toHaveTextContent('Status: WANT_TO_READ');
+    expect(screen.getByTestId('mock-actions')).toHaveTextContent('Progress: 0%');
   });
 });

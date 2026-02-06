@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { BookDetailHero } from './BookDetailHero';
 import { BookDescription } from './BookDescription';
 import { BookReadersCount } from './BookReadersCount';
@@ -39,12 +39,17 @@ export function BookDetail({ data }: BookDetailProps) {
     description: book.description ?? undefined,
   };
 
+  const userBookId = useMemo(() => userStatus?.userBookId, [userStatus?.userBookId]);
+
   const handleStatusChange = useCallback((status: ReadingStatus) => {
     setIsInLibrary(true);
     setCurrentStatus(status);
-    if (status !== 'CURRENTLY_READING') {
-      setProgress(status === 'FINISHED' ? 100 : 0);
+    if (status === 'FINISHED') {
+      setProgress(100);
+    } else if (status === 'WANT_TO_READ') {
+      setProgress(0);
     }
+    // For CURRENTLY_READING, keep existing progress
   }, []);
 
   return (
@@ -68,6 +73,7 @@ export function BookDetail({ data }: BookDetailProps) {
         isInLibrary={isInLibrary}
         currentStatus={currentStatus}
         progress={progress}
+        userBookId={userBookId}
         onStatusChange={handleStatusChange}
         className="border-t border-border"
       />

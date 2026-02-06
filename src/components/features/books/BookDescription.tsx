@@ -76,7 +76,7 @@ export function BookDescription({
           <Button
             variant="ghost"
             size="icon"
-            className="h-6 w-6"
+            className="h-11 w-11"
             onClick={handleCopyISBN}
             aria-label="Copy ISBN"
             data-testid="copy-isbn-button"

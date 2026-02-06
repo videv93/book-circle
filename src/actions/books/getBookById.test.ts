@@ -101,6 +101,27 @@ describe('getBookById', () => {
     }
   });
 
+  const mockSessionUser = {
+    id: 'user-123',
+    email: 'test@example.com',
+    name: 'Test User',
+    emailVerified: true,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
+
+  const mockSession = {
+    user: mockSessionUser,
+    session: {
+      id: 'session-123',
+      userId: 'user-123',
+      expiresAt: new Date(),
+      token: 'token',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    },
+  };
+
   it('should include user status when authenticated and book is in library', async () => {
     const mockUserBook = {
       id: 'userbook-123',
@@ -118,17 +139,7 @@ describe('getBookById', () => {
     vi.mocked(prisma.userBook.count)
       .mockResolvedValueOnce(10)
       .mockResolvedValueOnce(3);
-    vi.mocked(auth.api.getSession).mockResolvedValue({
-      user: { id: 'user-123', email: 'test@example.com' },
-      session: {
-        id: 'session-123',
-        userId: 'user-123',
-        expiresAt: new Date(),
-        token: 'token',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-    });
+    vi.mocked(auth.api.getSession).mockResolvedValue(mockSession);
     vi.mocked(prisma.userBook.findUnique).mockResolvedValue(mockUserBook);
 
     const result = await getBookById('book-123');
@@ -149,17 +160,7 @@ describe('getBookById', () => {
     vi.mocked(prisma.userBook.count)
       .mockResolvedValueOnce(10)
       .mockResolvedValueOnce(3);
-    vi.mocked(auth.api.getSession).mockResolvedValue({
-      user: { id: 'user-123', email: 'test@example.com' },
-      session: {
-        id: 'session-123',
-        userId: 'user-123',
-        expiresAt: new Date(),
-        token: 'token',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-    });
+    vi.mocked(auth.api.getSession).mockResolvedValue(mockSession);
     vi.mocked(prisma.userBook.findUnique).mockResolvedValue(null);
 
     const result = await getBookById('book-123');

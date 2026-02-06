@@ -106,6 +106,80 @@ describe('useUserLibrary', () => {
     });
   });
 
+  describe('updateOptimistic', () => {
+    it('updates status of existing book', () => {
+      const { result } = renderHook(() => useUserLibrary());
+
+      act(() => {
+        result.current.addOptimistic('9780743273565', 'CURRENTLY_READING');
+      });
+
+      act(() => {
+        result.current.updateOptimistic('9780743273565', 'FINISHED');
+      });
+
+      expect(result.current.getStatus('9780743273565')).toBe('FINISHED');
+      expect(result.current.libraryBooks.get('9780743273565')?.progress).toBe(100);
+    });
+
+    it('sets progress to 0 for WANT_TO_READ', () => {
+      const { result } = renderHook(() => useUserLibrary());
+
+      act(() => {
+        result.current.addOptimistic('9780743273565', 'CURRENTLY_READING');
+      });
+
+      act(() => {
+        result.current.updateOptimistic('9780743273565', 'WANT_TO_READ');
+      });
+
+      expect(result.current.getStatus('9780743273565')).toBe('WANT_TO_READ');
+      expect(result.current.libraryBooks.get('9780743273565')?.progress).toBe(0);
+    });
+
+    it('keeps existing progress for CURRENTLY_READING', () => {
+      const { result } = renderHook(() => useUserLibrary());
+
+      act(() => {
+        result.current.addOptimistic('9780743273565', 'FINISHED');
+      });
+
+      // Progress is 100 from FINISHED
+      expect(result.current.libraryBooks.get('9780743273565')?.progress).toBe(100);
+
+      act(() => {
+        result.current.updateOptimistic('9780743273565', 'CURRENTLY_READING');
+      });
+
+      expect(result.current.getStatus('9780743273565')).toBe('CURRENTLY_READING');
+      expect(result.current.libraryBooks.get('9780743273565')?.progress).toBe(100);
+    });
+
+    it('does nothing for books not in library', () => {
+      const { result } = renderHook(() => useUserLibrary());
+
+      act(() => {
+        result.current.updateOptimistic('9780743273565', 'FINISHED');
+      });
+
+      expect(result.current.isInLibrary('9780743273565')).toBe(false);
+    });
+
+    it('keeps book in library after update', () => {
+      const { result } = renderHook(() => useUserLibrary());
+
+      act(() => {
+        result.current.addOptimistic('9780743273565', 'CURRENTLY_READING');
+      });
+
+      act(() => {
+        result.current.updateOptimistic('9780743273565', 'WANT_TO_READ');
+      });
+
+      expect(result.current.isInLibrary('9780743273565')).toBe(true);
+    });
+  });
+
   describe('checkBooksStatus', () => {
     it('does nothing for empty ISBN array', async () => {
       const { result } = renderHook(() => useUserLibrary());
