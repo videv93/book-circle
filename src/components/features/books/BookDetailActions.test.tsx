@@ -8,19 +8,27 @@ import type { BookSearchResult } from '@/services/books/types';
 vi.mock('@/actions/books', () => ({
   addToLibrary: vi.fn(),
   updateReadingStatus: vi.fn(),
+  removeFromLibrary: vi.fn(),
+  restoreToLibrary: vi.fn(),
 }));
 
-vi.mock('sonner', () => ({
-  toast: {
-    success: vi.fn(),
-    error: vi.fn(),
-  },
-}));
+vi.mock('sonner', () => {
+  const fn = vi.fn() as ReturnType<typeof vi.fn> & {
+    success: ReturnType<typeof vi.fn>;
+    error: ReturnType<typeof vi.fn>;
+  };
+  fn.success = vi.fn();
+  fn.error = vi.fn();
+  return { toast: fn };
+});
 
-import { updateReadingStatus } from '@/actions/books';
+import { updateReadingStatus, removeFromLibrary, restoreToLibrary } from '@/actions/books';
 import { toast } from 'sonner';
 
 const mockUpdateReadingStatus = updateReadingStatus as unknown as ReturnType<typeof vi.fn>;
+const mockRemoveFromLibrary = removeFromLibrary as unknown as ReturnType<typeof vi.fn>;
+const mockRestoreToLibrary = restoreToLibrary as unknown as ReturnType<typeof vi.fn>;
+const mockToast = toast as unknown as ReturnType<typeof vi.fn>;
 const mockToastSuccess = toast.success as unknown as ReturnType<typeof vi.fn>;
 const mockToastError = toast.error as unknown as ReturnType<typeof vi.fn>;
 
@@ -456,5 +464,237 @@ describe('BookDetailActions', () => {
     );
 
     expect(screen.getByTestId('progress-value')).toHaveTextContent('0%');
+  });
+
+  describe('remove from library', () => {
+    it('renders remove button when book is in library', () => {
+      render(
+        <BookDetailActions
+          book={mockBook}
+          isInLibrary={true}
+          currentStatus="CURRENTLY_READING"
+          userBookId="ub-123"
+        />
+      );
+
+      expect(screen.getByTestId('remove-from-library-button')).toBeInTheDocument();
+      expect(screen.getByTestId('remove-from-library-button')).toHaveTextContent('Remove from Library');
+    });
+
+    it('does not render remove button when book is not in library', () => {
+      render(<BookDetailActions book={mockBook} isInLibrary={false} />);
+
+      expect(screen.queryByTestId('remove-from-library-button')).not.toBeInTheDocument();
+    });
+
+    it('opens confirmation dialog on button click', async () => {
+      const user = userEvent.setup();
+      render(
+        <BookDetailActions
+          book={mockBook}
+          isInLibrary={true}
+          currentStatus="CURRENTLY_READING"
+          userBookId="ub-123"
+        />
+      );
+
+      await user.click(screen.getByTestId('remove-from-library-button'));
+
+      expect(screen.getByTestId('remove-dialog-title')).toHaveTextContent('Test Book');
+      expect(screen.getByTestId('remove-dialog-description')).toHaveTextContent(
+        'This will remove your reading history for this book.'
+      );
+      expect(screen.getByTestId('remove-dialog-cancel')).toBeInTheDocument();
+      expect(screen.getByTestId('remove-dialog-confirm')).toBeInTheDocument();
+    });
+
+    it('closes dialog on cancel without calling removeFromLibrary', async () => {
+      const user = userEvent.setup();
+      render(
+        <BookDetailActions
+          book={mockBook}
+          isInLibrary={true}
+          currentStatus="CURRENTLY_READING"
+          userBookId="ub-123"
+        />
+      );
+
+      await user.click(screen.getByTestId('remove-from-library-button'));
+      await user.click(screen.getByTestId('remove-dialog-cancel'));
+
+      expect(mockRemoveFromLibrary).not.toHaveBeenCalled();
+    });
+
+    it('calls removeFromLibrary and onRemove on confirm', async () => {
+      const user = userEvent.setup();
+      const onRemove = vi.fn();
+      mockRemoveFromLibrary.mockResolvedValue({ success: true, data: {} });
+
+      render(
+        <BookDetailActions
+          book={mockBook}
+          isInLibrary={true}
+          currentStatus="CURRENTLY_READING"
+          progress={45}
+          userBookId="ub-123"
+          onRemove={onRemove}
+        />
+      );
+
+      await user.click(screen.getByTestId('remove-from-library-button'));
+      await user.click(screen.getByTestId('remove-dialog-confirm'));
+
+      await waitFor(() => {
+        expect(mockRemoveFromLibrary).toHaveBeenCalledWith({ userBookId: 'ub-123' });
+      });
+      expect(onRemove).toHaveBeenCalled();
+    });
+
+    it('shows toast with undo action on successful removal', async () => {
+      const user = userEvent.setup();
+      mockRemoveFromLibrary.mockResolvedValue({ success: true, data: {} });
+
+      render(
+        <BookDetailActions
+          book={mockBook}
+          isInLibrary={true}
+          currentStatus="CURRENTLY_READING"
+          userBookId="ub-123"
+        />
+      );
+
+      await user.click(screen.getByTestId('remove-from-library-button'));
+      await user.click(screen.getByTestId('remove-dialog-confirm'));
+
+      await waitFor(() => {
+        expect(mockToast).toHaveBeenCalledWith(
+          'Book removed from library',
+          expect.objectContaining({
+            action: expect.objectContaining({ label: 'Undo' }),
+            duration: 5000,
+          })
+        );
+      });
+    });
+
+    it('calls onRestore and restoreToLibrary when undo is clicked', async () => {
+      const user = userEvent.setup();
+      const onRestore = vi.fn();
+      mockRemoveFromLibrary.mockResolvedValue({ success: true, data: {} });
+      mockRestoreToLibrary.mockResolvedValue({ success: true, data: {} });
+
+      render(
+        <BookDetailActions
+          book={mockBook}
+          isInLibrary={true}
+          currentStatus="CURRENTLY_READING"
+          progress={45}
+          userBookId="ub-123"
+          onRestore={onRestore}
+        />
+      );
+
+      await user.click(screen.getByTestId('remove-from-library-button'));
+      await user.click(screen.getByTestId('remove-dialog-confirm'));
+
+      // Extract the undo callback from the toast call
+      await waitFor(() => {
+        expect(mockToast).toHaveBeenCalled();
+      });
+
+      const toastCall = mockToast.mock.calls[0];
+      const undoCallback = toastCall[1].action.onClick;
+
+      // Invoke the undo callback
+      await undoCallback();
+
+      expect(mockRestoreToLibrary).toHaveBeenCalledWith({ userBookId: 'ub-123' });
+      expect(onRestore).toHaveBeenCalledWith('CURRENTLY_READING', 45);
+      expect(mockToastSuccess).toHaveBeenCalledWith('Book restored to library');
+    });
+
+    it('rolls back with onRestore on removal failure', async () => {
+      const user = userEvent.setup();
+      const onRestore = vi.fn();
+      mockRemoveFromLibrary.mockResolvedValue({
+        success: false,
+        error: 'Failed to remove book',
+      });
+
+      render(
+        <BookDetailActions
+          book={mockBook}
+          isInLibrary={true}
+          currentStatus="CURRENTLY_READING"
+          progress={45}
+          userBookId="ub-123"
+          onRestore={onRestore}
+        />
+      );
+
+      await user.click(screen.getByTestId('remove-from-library-button'));
+      await user.click(screen.getByTestId('remove-dialog-confirm'));
+
+      await waitFor(() => {
+        expect(mockToastError).toHaveBeenCalledWith('Failed to remove book');
+      });
+      expect(onRestore).toHaveBeenCalledWith('CURRENTLY_READING', 45);
+    });
+
+    it('shows error toast when undo restore fails', async () => {
+      const user = userEvent.setup();
+      mockRemoveFromLibrary.mockResolvedValue({ success: true, data: {} });
+      mockRestoreToLibrary.mockResolvedValue({
+        success: false,
+        error: 'Restore failed',
+      });
+
+      render(
+        <BookDetailActions
+          book={mockBook}
+          isInLibrary={true}
+          currentStatus="CURRENTLY_READING"
+          userBookId="ub-123"
+        />
+      );
+
+      await user.click(screen.getByTestId('remove-from-library-button'));
+      await user.click(screen.getByTestId('remove-dialog-confirm'));
+
+      await waitFor(() => {
+        expect(mockToast).toHaveBeenCalled();
+      });
+
+      const toastCall = mockToast.mock.calls[0];
+      const undoCallback = toastCall[1].action.onClick;
+      await undoCallback();
+
+      expect(mockToastError).toHaveBeenCalledWith('Failed to restore book');
+    });
+
+    it('disables change-status button while removing', async () => {
+      const user = userEvent.setup();
+      // Make removal hang to observe disabled state
+      mockRemoveFromLibrary.mockImplementation(
+        () => new Promise((resolve) => setTimeout(() => resolve({ success: true, data: {} }), 100))
+      );
+
+      render(
+        <BookDetailActions
+          book={mockBook}
+          isInLibrary={true}
+          currentStatus="CURRENTLY_READING"
+          userBookId="ub-123"
+        />
+      );
+
+      await user.click(screen.getByTestId('remove-from-library-button'));
+      await user.click(screen.getByTestId('remove-dialog-confirm'));
+
+      // While removing, change-status should be disabled
+      await waitFor(() => {
+        expect(screen.getByTestId('change-status-button')).toBeDisabled();
+      });
+    });
   });
 });

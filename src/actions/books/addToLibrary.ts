@@ -98,9 +98,25 @@ export async function addToLibrary(
           bookId: book.id,
         },
       },
+      include: { book: true },
     });
 
     if (existingUserBook) {
+      // If soft-deleted, restore with new status
+      if (existingUserBook.deletedAt) {
+        const restored = await prisma.userBook.update({
+          where: { id: existingUserBook.id },
+          data: {
+            deletedAt: null,
+            status: validated.status as ReadingStatus,
+            progress: validated.status === 'FINISHED' ? 100 : 0,
+            dateAdded: new Date(),
+            dateFinished: validated.status === 'FINISHED' ? new Date() : null,
+          },
+          include: { book: true },
+        });
+        return { success: true, data: restored };
+      }
       return { success: false, error: 'This book is already in your library' };
     }
 

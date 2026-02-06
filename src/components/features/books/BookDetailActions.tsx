@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ArrowRight, BookOpen, CheckCircle, BookMarked } from 'lucide-react';
+import { ArrowRight, BookOpen, CheckCircle, BookMarked, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -10,8 +10,19 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { cn } from '@/lib/utils';
-import { updateReadingStatus } from '@/actions/books';
+import { updateReadingStatus, removeFromLibrary, restoreToLibrary } from '@/actions/books';
 import { AddToLibraryButton } from './AddToLibraryButton';
 import { ReadingStatusSelector } from './ReadingStatusSelector';
 import { getReadingStatusLabel } from './types';
@@ -25,6 +36,8 @@ interface BookDetailActionsProps {
   progress?: number;
   userBookId?: string;
   onStatusChange?: (status: ReadingStatus) => void;
+  onRemove?: () => void;
+  onRestore?: (status: ReadingStatus, progress: number) => void;
   className?: string;
 }
 
@@ -48,6 +61,8 @@ export function BookDetailActions({
   progress = 0,
   userBookId,
   onStatusChange,
+  onRemove,
+  onRestore,
   className,
 }: BookDetailActionsProps) {
   // Optimistic overlay: when set, overrides props. Cleared after server response.
@@ -56,6 +71,7 @@ export function BookDetailActions({
     progress: number;
   } | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isRemoving, setIsRemoving] = useState(false);
   const [popoverOpen, setPopoverOpen] = useState(false);
 
   // Display values: optimistic overlay takes priority, then falls through to props
@@ -122,6 +138,47 @@ export function BookDetailActions({
     }
   };
 
+  const handleRemove = async () => {
+    if (!userBookId || isRemoving) return;
+
+    // Store previous state for undo
+    const previousStatus = displayStatus;
+    const previousProgress = displayProgress;
+
+    // Optimistic removal
+    setIsRemoving(true);
+    onRemove?.();
+
+    const result = await removeFromLibrary({ userBookId });
+
+    if (result.success) {
+      toast('Book removed from library', {
+        action: {
+          label: 'Undo',
+          onClick: async () => {
+            const restoreResult = await restoreToLibrary({ userBookId });
+            if (restoreResult.success) {
+              if (previousStatus) {
+                onRestore?.(previousStatus, previousProgress);
+              }
+              toast.success('Book restored to library');
+            } else {
+              toast.error('Failed to restore book');
+            }
+          },
+        },
+        duration: 5000,
+      });
+    } else {
+      // Rollback
+      if (previousStatus) {
+        onRestore?.(previousStatus, previousProgress);
+      }
+      toast.error(result.error);
+    }
+    setIsRemoving(false);
+  };
+
   return (
     <div
       className={cn('px-4 py-4 space-y-4', className)}
@@ -142,7 +199,7 @@ export function BookDetailActions({
               size="sm"
               className="gap-1"
               data-testid="change-status-button"
-              disabled={isUpdating}
+              disabled={isUpdating || isRemoving}
             >
               Change status <ArrowRight className="h-3 w-3" aria-hidden />
             </Button>
@@ -190,6 +247,42 @@ export function BookDetailActions({
       <p className="text-xs text-muted-foreground text-center">
         Session logging and progress updates coming in future updates
       </p>
+
+      {/* Remove from library */}
+      <AlertDialog>
+        <AlertDialogTrigger asChild>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="w-full gap-1 text-destructive hover:text-destructive hover:bg-destructive/10"
+            data-testid="remove-from-library-button"
+            disabled={isRemoving || isUpdating}
+          >
+            <Trash2 className="h-4 w-4" />
+            Remove from Library
+          </Button>
+        </AlertDialogTrigger>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle data-testid="remove-dialog-title">
+              Remove &ldquo;{book.title}&rdquo; from your library?
+            </AlertDialogTitle>
+            <AlertDialogDescription data-testid="remove-dialog-description">
+              This will remove your reading history for this book.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="remove-dialog-cancel">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleRemove}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              data-testid="remove-dialog-confirm"
+            >
+              Remove
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

@@ -56,12 +56,16 @@ vi.mock('./BookDetailActions', () => ({
     progress,
     userBookId,
     onStatusChange,
+    onRemove,
+    onRestore,
   }: {
     isInLibrary: boolean;
     currentStatus?: string;
     progress?: number;
     userBookId?: string;
     onStatusChange?: (status: 'CURRENTLY_READING' | 'FINISHED' | 'WANT_TO_READ') => void;
+    onRemove?: () => void;
+    onRestore?: (status: 'CURRENTLY_READING' | 'FINISHED' | 'WANT_TO_READ', progress: number) => void;
   }) => (
     <div data-testid="mock-actions">
       <span>{isInLibrary ? 'In Library' : 'Not In Library'}</span>
@@ -86,6 +90,19 @@ vi.mock('./BookDetailActions', () => ({
       >
         Want to Read
       </button>
+      {onRemove && (
+        <button onClick={onRemove} data-testid="remove-button">
+          Remove
+        </button>
+      )}
+      {onRestore && (
+        <button
+          onClick={() => onRestore?.('CURRENTLY_READING', 50)}
+          data-testid="restore-button"
+        >
+          Restore
+        </button>
+      )}
     </div>
   ),
 }));
@@ -279,5 +296,51 @@ describe('BookDetail', () => {
 
     expect(screen.getByTestId('mock-actions')).toHaveTextContent('Status: WANT_TO_READ');
     expect(screen.getByTestId('mock-actions')).toHaveTextContent('Progress: 0%');
+  });
+
+  it('sets isInLibrary to false and clears status on remove', async () => {
+    const user = userEvent.setup();
+    const dataWithUserStatus: BookDetailData = {
+      ...mockData,
+      userStatus: {
+        isInLibrary: true,
+        status: 'CURRENTLY_READING',
+        progress: 50,
+        userBookId: 'userbook-123',
+      },
+    };
+
+    render(<BookDetail data={dataWithUserStatus} />);
+
+    expect(screen.getByTestId('mock-actions')).toHaveTextContent('In Library');
+
+    await user.click(screen.getByTestId('remove-button'));
+
+    expect(screen.getByTestId('mock-actions')).toHaveTextContent('Not In Library');
+  });
+
+  it('restores library state on restore callback', async () => {
+    const user = userEvent.setup();
+    const dataWithUserStatus: BookDetailData = {
+      ...mockData,
+      userStatus: {
+        isInLibrary: true,
+        status: 'CURRENTLY_READING',
+        progress: 50,
+        userBookId: 'userbook-123',
+      },
+    };
+
+    render(<BookDetail data={dataWithUserStatus} />);
+
+    // Remove first
+    await user.click(screen.getByTestId('remove-button'));
+    expect(screen.getByTestId('mock-actions')).toHaveTextContent('Not In Library');
+
+    // Restore
+    await user.click(screen.getByTestId('restore-button'));
+    expect(screen.getByTestId('mock-actions')).toHaveTextContent('In Library');
+    expect(screen.getByTestId('mock-actions')).toHaveTextContent('Status: CURRENTLY_READING');
+    expect(screen.getByTestId('mock-actions')).toHaveTextContent('Progress: 50%');
   });
 });

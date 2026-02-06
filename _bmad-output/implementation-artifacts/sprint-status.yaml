@@ -53,7 +53,7 @@ development_status:
   2-2-add-book-to-library: done
   2-3-book-detail-page: done
   2-4-update-reading-status: done
-  2-5-remove-book-from-library: backlog
+  2-5-remove-book-from-library: done
   2-6-library-view-organization: backlog
   epic-2-retrospective: optional
 

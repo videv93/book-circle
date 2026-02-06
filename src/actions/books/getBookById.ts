@@ -84,15 +84,16 @@ export async function getBookById(
       };
     }
 
-    // Aggregate reader counts
+    // Aggregate reader counts (exclude soft-deleted)
     const [totalReaders, currentlyReading] = await Promise.all([
       prisma.userBook.count({
-        where: { bookId: book.id },
+        where: { bookId: book.id, deletedAt: null },
       }),
       prisma.userBook.count({
         where: {
           bookId: book.id,
           status: 'CURRENTLY_READING',
+          deletedAt: null,
         },
       }),
     ]);
@@ -105,12 +106,11 @@ export async function getBookById(
     });
 
     if (session?.user?.id) {
-      const userBook = await prisma.userBook.findUnique({
+      const userBook = await prisma.userBook.findFirst({
         where: {
-          userId_bookId: {
-            userId: session.user.id,
-            bookId: book.id,
-          },
+          userId: session.user.id,
+          bookId: book.id,
+          deletedAt: null,
         },
       });
 

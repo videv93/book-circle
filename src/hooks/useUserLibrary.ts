@@ -33,6 +33,8 @@ interface UseUserLibraryReturn {
   removeOptimistic: (isbn: string) => void;
   /** Optimistically update a book's reading status */
   updateOptimistic: (isbn: string, status: ReadingStatus) => void;
+  /** Restore a previously removed book to optimistic state */
+  restoreOptimistic: (isbn: string, status: ReadingStatus, progress: number) => void;
   /** Check the status of multiple books from the server */
   checkBooksStatus: (isbns: string[]) => Promise<void>;
 }
@@ -141,6 +143,21 @@ export function useUserLibrary(): UseUserLibraryReturn {
   );
 
   /**
+   * Restore a previously removed book to optimistic state.
+   * Used when user taps "Undo" on the removal toast.
+   */
+  const restoreOptimistic = useCallback(
+    (isbn: string, status: ReadingStatus, restoredProgress: number): void => {
+      setLibraryBooks((prev) => {
+        const next = new Map(prev);
+        next.set(isbn, { isbn, status, progress: restoredProgress });
+        return next;
+      });
+    },
+    []
+  );
+
+  /**
    * Check the status of multiple books from the server.
    * More efficient than checking one by one.
    */
@@ -186,6 +203,7 @@ export function useUserLibrary(): UseUserLibraryReturn {
     addOptimistic,
     removeOptimistic,
     updateOptimistic,
+    restoreOptimistic,
     checkBooksStatus,
   };
 }

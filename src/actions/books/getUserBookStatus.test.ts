@@ -22,6 +22,7 @@ vi.mock('@/lib/prisma', () => ({
     },
     userBook: {
       findUnique: vi.fn(),
+      findFirst: vi.fn(),
       findMany: vi.fn(),
     },
   },
@@ -35,7 +36,7 @@ const mockHeaders = headers as unknown as ReturnType<typeof vi.fn>;
 const mockGetSession = auth.api.getSession as unknown as ReturnType<typeof vi.fn>;
 const mockBookFindFirst = prisma.book.findFirst as unknown as ReturnType<typeof vi.fn>;
 const mockBookFindMany = prisma.book.findMany as unknown as ReturnType<typeof vi.fn>;
-const mockUserBookFindUnique = prisma.userBook.findUnique as unknown as ReturnType<typeof vi.fn>;
+const mockUserBookFindFirst = prisma.userBook.findFirst as unknown as ReturnType<typeof vi.fn>;
 const mockUserBookFindMany = prisma.userBook.findMany as unknown as ReturnType<typeof vi.fn>;
 
 describe('getUserBookStatus', () => {
@@ -89,7 +90,7 @@ describe('getUserBookStatus', () => {
   it('returns not in library when user does not have the book', async () => {
     mockGetSession.mockResolvedValue({ user: { id: 'user-123' } });
     mockBookFindFirst.mockResolvedValue(mockBook);
-    mockUserBookFindUnique.mockResolvedValue(null);
+    mockUserBookFindFirst.mockResolvedValue(null);
 
     const result = await getUserBookStatus('9780743273565');
 
@@ -102,7 +103,7 @@ describe('getUserBookStatus', () => {
   it('returns book status when user has the book', async () => {
     mockGetSession.mockResolvedValue({ user: { id: 'user-123' } });
     mockBookFindFirst.mockResolvedValue(mockBook);
-    mockUserBookFindUnique.mockResolvedValue(mockUserBook);
+    mockUserBookFindFirst.mockResolvedValue(mockUserBook);
 
     const result = await getUserBookStatus('9780743273565');
 
@@ -118,7 +119,7 @@ describe('getUserBookStatus', () => {
   it('searches by both isbn10 and isbn13', async () => {
     mockGetSession.mockResolvedValue({ user: { id: 'user-123' } });
     mockBookFindFirst.mockResolvedValue(mockBook);
-    mockUserBookFindUnique.mockResolvedValue(mockUserBook);
+    mockUserBookFindFirst.mockResolvedValue(mockUserBook);
 
     await getUserBookStatus('0743273567');
 

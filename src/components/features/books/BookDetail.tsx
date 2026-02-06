@@ -52,6 +52,18 @@ export function BookDetail({ data }: BookDetailProps) {
     // For CURRENTLY_READING, keep existing progress
   }, []);
 
+  const handleRemove = useCallback(() => {
+    setIsInLibrary(false);
+    setCurrentStatus(undefined);
+    setProgress(0);
+  }, []);
+
+  const handleRestore = useCallback((status: ReadingStatus, restoredProgress: number) => {
+    setIsInLibrary(true);
+    setCurrentStatus(status);
+    setProgress(restoredProgress);
+  }, []);
+
   return (
     <div data-testid="book-detail">
       <BookDetailHero book={book} authorVerified={authorVerified} />
@@ -75,6 +87,8 @@ export function BookDetail({ data }: BookDetailProps) {
         progress={progress}
         userBookId={userBookId}
         onStatusChange={handleStatusChange}
+        onRemove={handleRemove}
+        onRestore={handleRestore}
         className="border-t border-border"
       />
     </div>

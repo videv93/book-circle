@@ -36,13 +36,12 @@ export async function getUserBookStatus(
       return { success: true, data: { isInLibrary: false } };
     }
 
-    // Check if user has this book in their library
-    const userBook = await prisma.userBook.findUnique({
+    // Check if user has this book in their library (exclude soft-deleted)
+    const userBook = await prisma.userBook.findFirst({
       where: {
-        userId_bookId: {
-          userId: session.user.id,
-          bookId: book.id,
-        },
+        userId: session.user.id,
+        bookId: book.id,
+        deletedAt: null,
       },
       include: {
         book: true,
@@ -104,11 +103,12 @@ export async function getBatchUserBookStatus(
       return { success: true, data: result };
     }
 
-    // Get user's books for found books
+    // Get user's books for found books (exclude soft-deleted)
     const userBooks = await prisma.userBook.findMany({
       where: {
         userId: session.user.id,
         bookId: { in: books.map((b) => b.id) },
+        deletedAt: null,
       },
       include: {
         book: true,
