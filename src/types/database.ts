@@ -13,6 +13,8 @@ export type {
   UserBook,
   ReadingSession,
   ReadingStatus,
+  Follow,
+  Kudos,
 } from '@prisma/client';
 
 // Re-export Prisma enums as values for runtime use

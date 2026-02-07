@@ -1,17 +1,48 @@
-'use client';
+import { headers } from 'next/headers';
+import { redirect } from 'next/navigation';
+import { auth } from '@/lib/auth';
+import { getActivityFeed } from '@/actions/social/getActivityFeed';
+import { ActivityFeed } from '@/components/features/social';
+import { PageHeader } from '@/components/layout/PageHeader';
 
-import { Bell } from 'lucide-react';
+export default async function ActivityPage() {
+  // Authenticate user
+  const headersList = await headers();
+  const session = await auth.api.getSession({ headers: headersList });
 
-export default function ActivityPage() {
+  if (!session?.user) {
+    redirect('/login?callbackUrl=/activity');
+  }
+
+  // Fetch initial activity feed data
+  const result = await getActivityFeed({ limit: 20, offset: 0 });
+
+  if (!result.success) {
+    // Handle error - show empty state
+    return (
+      <main className="container mx-auto px-4 py-8 max-w-2xl">
+        <PageHeader title="Activity" />
+        <div className="mt-6">
+          <p className="text-center text-muted-foreground">
+            Unable to load activity feed. Please try again later.
+          </p>
+        </div>
+      </main>
+    );
+  }
+
+  const { activities, total, hasFollows } = result.data;
+
   return (
-    <div className="flex flex-col items-center justify-center gap-4 p-8 pt-16">
-      <Bell className="h-16 w-16 text-muted-foreground" />
-      <h2 className="text-xl font-semibold text-foreground">Activity Feed</h2>
-      <p className="text-center text-muted-foreground">
-        See what your friends are reading.
-        <br />
-        Coming soon in Epic 4.
-      </p>
-    </div>
+    <main className="container mx-auto px-4 py-8 max-w-2xl">
+      <PageHeader title="Activity" />
+      <div className="mt-6">
+        <ActivityFeed
+          initialActivities={activities}
+          initialTotal={total}
+          hasFollows={hasFollows}
+        />
+      </div>
+    </main>
   );
 }

@@ -1,0 +1,235 @@
+'use server';
+
+import { z } from 'zod';
+import { headers } from 'next/headers';
+import { auth } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
+import type { ActionResult } from '@/actions/books/types';
+
+// Input validation schema
+const getActivityFeedSchema = z.object({
+  limit: z.number().int().min(1).max(50).optional().default(20),
+  offset: z.number().int().min(0).optional().default(0),
+});
+
+export type GetActivityFeedInput = z.infer<typeof getActivityFeedSchema>;
+
+// Activity item types
+export type SessionActivity = {
+  type: 'session';
+  id: string;
+  userId: string;
+  userName: string | null;
+  userAvatar: string | null;
+  bookId: string;
+  bookTitle: string;
+  bookCover: string | null;
+  duration: number; // seconds
+  timestamp: Date;
+  kudosCount: number;
+  userGaveKudos: boolean;
+};
+
+export type FinishedBookActivity = {
+  type: 'finished';
+  id: string;
+  userId: string;
+  userName: string | null;
+  userAvatar: string | null;
+  bookId: string;
+  bookTitle: string;
+  bookCover: string | null;
+  bookAuthor: string | null;
+  timestamp: Date;
+};
+
+export type ActivityItem = SessionActivity | FinishedBookActivity;
+
+export type ActivityFeedData = {
+  activities: ActivityItem[];
+  total: number;
+  hasFollows: boolean;
+};
+
+export async function getActivityFeed(
+  input: GetActivityFeedInput = {}
+): Promise<ActionResult<ActivityFeedData>> {
+  try {
+    // Validate input
+    const validated = getActivityFeedSchema.parse(input);
+    const { limit, offset } = validated;
+
+    // Authenticate
+    const headersList = await headers();
+    const session = await auth.api.getSession({ headers: headersList });
+    if (!session?.user) {
+      return { success: false, error: 'Unauthorized' };
+    }
+
+    const currentUserId = session.user.id;
+
+    // Get list of users the current user follows
+    const follows = await prisma.follow.findMany({
+      where: { followerId: currentUserId },
+      select: { followingId: true },
+    });
+
+    const followedUserIds = follows.map((f) => f.followingId);
+    const hasFollows = followedUserIds.length > 0;
+
+    // If user follows no one, return empty result
+    if (!hasFollows) {
+      return {
+        success: true,
+        data: {
+          activities: [],
+          total: 0,
+          hasFollows: false,
+        },
+      };
+    }
+
+    // Cap per-type queries to prevent loading excessive data when merging
+    const queryCap = limit + offset;
+
+    // Fetch reading sessions and finished books in parallel
+    const [sessions, finishedBooks] = await Promise.all([
+      // Reading sessions from followed users with public activity
+      prisma.readingSession.findMany({
+        where: {
+          userId: { in: followedUserIds },
+          user: { showReadingActivity: true },
+        },
+        orderBy: { startedAt: 'desc' },
+        take: queryCap,
+        select: {
+          id: true,
+          userId: true,
+          bookId: true,
+          duration: true,
+          startedAt: true,
+          user: {
+            select: {
+              id: true,
+              name: true,
+              avatarUrl: true,
+              image: true,
+            },
+          },
+          book: {
+            select: {
+              id: true,
+              title: true,
+              coverUrl: true,
+            },
+          },
+        },
+      }),
+      // Finished books from followed users with public activity
+      prisma.userBook.findMany({
+        where: {
+          userId: { in: followedUserIds },
+          status: 'FINISHED',
+          deletedAt: null,
+          user: { showReadingActivity: true },
+        },
+        orderBy: { dateFinished: 'desc' },
+        take: queryCap,
+        select: {
+          id: true,
+          userId: true,
+          bookId: true,
+          dateFinished: true,
+          createdAt: true,
+          user: {
+            select: {
+              id: true,
+              name: true,
+              avatarUrl: true,
+              image: true,
+            },
+          },
+          book: {
+            select: {
+              id: true,
+              title: true,
+              author: true,
+              coverUrl: true,
+            },
+          },
+        },
+      }),
+    ]);
+
+    // Fetch kudos data for all sessions
+    const sessionIds = sessions.map((s) => s.id);
+    const sessionKudos =
+      sessionIds.length > 0
+        ? await prisma.kudos.findMany({
+            where: { sessionId: { in: sessionIds } },
+            select: { sessionId: true, giverId: true },
+          })
+        : [];
+
+    // Merge into unified activity list
+    const allActivities: ActivityItem[] = [
+      ...sessions.map((s): SessionActivity => {
+        const kudosForSession = sessionKudos.filter(
+          (k) => k.sessionId === s.id
+        );
+        return {
+          type: 'session',
+          id: s.id,
+          userId: s.userId,
+          userName: s.user.name,
+          userAvatar: s.user.avatarUrl || s.user.image || null,
+          bookId: s.bookId,
+          bookTitle: s.book.title,
+          bookCover: s.book.coverUrl,
+          duration: s.duration,
+          timestamp: s.startedAt,
+          kudosCount: kudosForSession.length,
+          userGaveKudos: kudosForSession.some(
+            (k) => k.giverId === currentUserId
+          ),
+        };
+      }),
+      ...finishedBooks.map(
+        (fb): FinishedBookActivity => ({
+          type: 'finished',
+          id: fb.id,
+          userId: fb.userId,
+          userName: fb.user.name,
+          userAvatar: fb.user.avatarUrl || fb.user.image || null,
+          bookId: fb.bookId,
+          bookTitle: fb.book.title,
+          bookCover: fb.book.coverUrl,
+          bookAuthor: fb.book.author,
+          timestamp: fb.dateFinished || fb.createdAt,
+        })
+      ),
+    ];
+
+    // Sort by timestamp descending (most recent first)
+    allActivities.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+
+    // Apply pagination
+    const paginatedActivities = allActivities.slice(offset, offset + limit);
+    const total = allActivities.length;
+
+    return {
+      success: true,
+      data: {
+        activities: paginatedActivities,
+        total,
+        hasFollows: true,
+      },
+    };
+  } catch (error) {
+    console.error('getActivityFeed error:', error);
+    return {
+      success: false,
+      error: 'Failed to load activity feed',
+    };
+  }
+}

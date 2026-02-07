@@ -70,11 +70,11 @@ development_status:
   epic-3-retrospective: optional
 
   # Epic 4: Social Connections & Activity Feed
-  epic-4: backlog
-  4-1-follow-unfollow-users: backlog
-  4-2-view-other-user-profiles: backlog
-  4-3-activity-feed: backlog
-  4-4-give-kudos: backlog
+  epic-4: in-progress
+  4-1-follow-unfollow-users: in-progress
+  4-2-view-other-user-profiles: done
+  4-3-activity-feed: review
+  4-4-give-kudos: done
   4-5-kudos-notifications: backlog
   4-6-view-kudos-received: backlog
   epic-4-retrospective: optional

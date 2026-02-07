@@ -38,6 +38,10 @@ model User {
   readingSessions ReadingSession[]
   streak          UserStreak?
   dailyProgress   DailyProgress[]
+  followers       Follow[]        @relation("UserFollowers")
+  following       Follow[]        @relation("UserFollowing")
+  kudosGiven      Kudos[]         @relation("KudosGiven")
+  kudosReceived   Kudos[]         @relation("KudosReceived")
 
   @@map("users")
 }
@@ -118,8 +122,9 @@ model ReadingSession {
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @updatedAt @map("updated_at")
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  book Book @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  user  User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  book  Book    @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  kudos Kudos[]
 
   @@index([userId])
   @@index([bookId])
@@ -180,4 +185,37 @@ model UserBook {
   @@index([userId])
   @@index([bookId])
   @@map("user_books")
+}
+
+model Follow {
+  id          String   @id @default(cuid())
+  followerId  String   @map("follower_id")
+  followingId String   @map("following_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  follower  User @relation("UserFollowers", fields: [followerId], references: [id], onDelete: Cascade)
+  following User @relation("UserFollowing", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@unique([followerId, followingId])
+  @@index([followerId])
+  @@index([followingId])
+  @@map("follows")
+}
+
+model Kudos {
+  id         String   @id @default(cuid())
+  giverId    String   @map("giver_id")
+  receiverId String   @map("receiver_id")
+  sessionId  String   @map("session_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  giver    User           @relation("KudosGiven", fields: [giverId], references: [id], onDelete: Cascade)
+  receiver User           @relation("KudosReceived", fields: [receiverId], references: [id], onDelete: Cascade)
+  session  ReadingSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@unique([giverId, sessionId])
+  @@index([giverId])
+  @@index([receiverId])
+  @@index([sessionId])
+  @@map("kudos")
 }
