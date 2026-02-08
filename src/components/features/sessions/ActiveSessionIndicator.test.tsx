@@ -15,10 +15,21 @@ vi.mock('@/lib/idb-storage', () => ({
 // Mock framer-motion
 vi.mock('framer-motion', () => ({
   motion: {
-    div: 'div',
+    div: ({
+      children,
+      animate,
+      transition,
+      layout,
+      initial,
+      exit,
+      ...rest
+    }: Record<string, unknown> & { children?: React.ReactNode }) => (
+      <div {...rest}>{children}</div>
+    ),
     main: 'main',
   },
   AnimatePresence: ({ children }: { children: React.ReactNode }) => children,
+  useReducedMotion: () => false,
 }));
 
 describe('ActiveSessionIndicator', () => {

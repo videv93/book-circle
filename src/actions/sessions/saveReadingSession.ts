@@ -11,11 +11,14 @@ import type { ActionResult } from '@/actions/books/types';
 
 const saveSessionSchema = z.object({
   bookId: z.string().min(1, 'Book ID is required'),
-  duration: z.number().int().min(60, 'Sessions under 1 minute cannot be saved'),
+  duration: z.number().int().min(60, 'Sessions under 1 minute cannot be saved').max(86400, 'Sessions cannot exceed 24 hours'),
   startedAt: z.string().datetime({ message: 'Invalid start time' }),
   endedAt: z.string().datetime({ message: 'Invalid end time' }),
   timezone: z.string().optional().default('UTC'),
-});
+}).refine(
+  (data) => new Date(data.endedAt) > new Date(data.startedAt),
+  { message: 'Session end time must be after start time', path: ['endedAt'] }
+);
 
 export type SaveReadingSessionInput = z.input<typeof saveSessionSchema>;
 

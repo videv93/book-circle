@@ -16,10 +16,21 @@ vi.mock('@/lib/idb-storage', () => ({
 // Mock framer-motion
 vi.mock('framer-motion', () => ({
   motion: {
-    div: 'div',
+    div: ({
+      children,
+      animate,
+      transition,
+      layout,
+      initial,
+      exit,
+      ...rest
+    }: Record<string, unknown> & { children?: React.ReactNode }) => (
+      <div {...rest}>{children}</div>
+    ),
     main: 'main',
   },
   AnimatePresence: ({ children }: { children: React.ReactNode }) => children,
+  useReducedMotion: () => false,
 }));
 
 // Mock sessions action (used by SessionSummary)
@@ -29,19 +40,37 @@ vi.mock('@/actions/sessions', () => ({
   getUserSessionStats: vi.fn(),
 }));
 
-// Mock sonner (used by SessionSummary)
+// Mock presence actions (auto-join on start)
+const mockJoinRoom = vi.fn();
+const mockGetRoomMembers = vi.fn();
+vi.mock('@/actions/presence', () => ({
+  joinRoom: (...args: unknown[]) => mockJoinRoom(...args),
+  getRoomMembers: (...args: unknown[]) => mockGetRoomMembers(...args),
+}));
+
+// Mock sonner (used by SessionSummary and auto-join)
+const mockToast = vi.fn();
 vi.mock('sonner', () => ({
-  toast: { success: vi.fn(), error: vi.fn(), info: vi.fn() },
+  toast: Object.assign(
+    (...args: unknown[]) => mockToast(...args),
+    { success: vi.fn(), error: vi.fn(), info: vi.fn() }
+  ),
 }));
 
 describe('SessionTimer', () => {
   beforeEach(() => {
+    vi.clearAllMocks();
     useTimerStore.setState({
       isRunning: false,
       startTime: null,
       currentBookId: null,
       currentBookTitle: null,
       _hasHydrated: true,
+    });
+    mockJoinRoom.mockResolvedValue({ success: true, data: { id: 'p1' } });
+    mockGetRoomMembers.mockResolvedValue({
+      success: true,
+      data: [{ id: 'user-1', name: 'Test User', avatarUrl: null, joinedAt: new Date(), isAuthor: false }],
     });
   });
 
@@ -235,5 +264,93 @@ describe('SessionTimer', () => {
     const display = screen.getByTestId('timer-display');
     // Should show approximately 01:05 (allow some tolerance)
     expect(display.textContent).toMatch(/01:0[4-6]/);
+  });
+
+  // --- Auto-join reading room tests ---
+
+  it('calls joinRoom when starting a reading session', async () => {
+    const user = userEvent.setup();
+    render(
+      <SessionTimer
+        bookId="book-1"
+        bookTitle="Test Book"
+        bookStatus="CURRENTLY_READING"
+      />
+    );
+
+    await user.click(screen.getByTestId('start-reading-button'));
+    expect(mockJoinRoom).toHaveBeenCalledWith('book-1');
+  });
+
+  it('shows solo reader toast when joining empty room on session start', async () => {
+    const user = userEvent.setup();
+    mockGetRoomMembers.mockResolvedValue({
+      success: true,
+      data: [{ id: 'user-1', name: 'Me', avatarUrl: null, joinedAt: new Date(), isAuthor: false }],
+    });
+    render(
+      <SessionTimer
+        bookId="book-1"
+        bookTitle="Test Book"
+        bookStatus="CURRENTLY_READING"
+      />
+    );
+
+    await user.click(screen.getByTestId('start-reading-button'));
+
+    // Wait for async joinRoom + getRoomMembers to resolve
+    await vi.waitFor(() => {
+      expect(mockToast).toHaveBeenCalledWith(
+        "You're the first reader here!",
+        expect.objectContaining({ duration: 3000 })
+      );
+    });
+  });
+
+  it('shows multi-reader toast when joining room with others on session start', async () => {
+    const user = userEvent.setup();
+    mockGetRoomMembers.mockResolvedValue({
+      success: true,
+      data: [
+        { id: 'user-1', name: 'Me', avatarUrl: null, joinedAt: new Date(), isAuthor: false },
+        { id: 'user-2', name: 'Other', avatarUrl: null, joinedAt: new Date(), isAuthor: false },
+        { id: 'user-3', name: 'Another', avatarUrl: null, joinedAt: new Date(), isAuthor: false },
+      ],
+    });
+    render(
+      <SessionTimer
+        bookId="book-1"
+        bookTitle="Test Book"
+        bookStatus="CURRENTLY_READING"
+      />
+    );
+
+    await user.click(screen.getByTestId('start-reading-button'));
+
+    await vi.waitFor(() => {
+      expect(mockToast).toHaveBeenCalledWith(
+        "You're reading with 2 others",
+        expect.objectContaining({ duration: 3000 })
+      );
+    });
+  });
+
+  it('does not show toast if joinRoom fails', async () => {
+    const user = userEvent.setup();
+    mockJoinRoom.mockResolvedValue({ success: false, error: 'Failed' });
+    render(
+      <SessionTimer
+        bookId="book-1"
+        bookTitle="Test Book"
+        bookStatus="CURRENTLY_READING"
+      />
+    );
+
+    await user.click(screen.getByTestId('start-reading-button'));
+
+    // Wait a tick for async to settle
+    await vi.waitFor(() => {
+      expect(mockGetRoomMembers).not.toHaveBeenCalled();
+    });
   });
 });

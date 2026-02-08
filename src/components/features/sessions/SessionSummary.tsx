@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Save, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -24,6 +25,8 @@ export interface SessionSummaryProps {
   bookTitle: string;
   duration: number; // seconds
   startTime: number; // Unix ms timestamp
+  userId: string; // For offline queue and streak updates
+  timezone?: string; // User's timezone for streak calculations (defaults to UTC)
   onComplete: () => void;
 }
 
@@ -32,8 +35,11 @@ export function SessionSummary({
   bookTitle,
   duration,
   startTime,
+  userId,
+  timezone = 'UTC',
   onComplete,
 }: SessionSummaryProps) {
+  const router = useRouter();
   const reset = useTimerStore((s) => s.reset);
   const queueSession = useOfflineStore((s) => s.queueSession);
   const [isSaving, setIsSaving] = useState(false);
@@ -79,7 +85,7 @@ export function SessionSummary({
     setIsSaving(true);
 
     if (!navigator.onLine) {
-      queueSession({ bookId, duration, startedAt, endedAt });
+      queueSession({ userId, bookId, duration, startedAt, endedAt });
       toast.info('Session saved offline. Will sync when connected.');
       reset();
       onComplete();
@@ -92,19 +98,34 @@ export function SessionSummary({
       duration,
       startedAt,
       endedAt,
+      timezone,
     });
 
     setIsSaving(false);
 
     if (result.success) {
       toast.success('Reading session saved!');
-      const earned = result.data.streakUpdate?.freezesEarned ?? 0;
-      if (earned > 0) {
-        const freezeMsg = result.data.streakUpdate?.message
-          ?? `You earned ${earned} streak freeze${earned > 1 ? 's' : ''}!`;
-        toast.success(freezeMsg);
+
+      // Handle streak updates
+      const streakUpdate = result.data.streakUpdate;
+      if (streakUpdate) {
+        // Show streak reset message if applicable (compassionate messaging)
+        if (streakUpdate.wasReset) {
+          toast.success('Fresh start! Day 1 of your new streak.');
+        }
+
+        // Show freeze earned notification
+        const earned = streakUpdate.freezesEarned ?? 0;
+        if (earned > 0) {
+          const freezeMsg = streakUpdate.message
+            ?? `You earned ${earned} streak freeze${earned > 1 ? 's' : ''}!`;
+          toast.success(freezeMsg);
+        }
       }
+
       reset();
+      // Refresh server data to update StreakRing immediately
+      router.refresh();
       onComplete();
     } else {
       toast.error(result.error);

@@ -5,6 +5,13 @@ import { SessionSummary } from './SessionSummary';
 import { useTimerStore } from '@/stores/useTimerStore';
 import { useOfflineStore } from '@/stores/useOfflineStore';
 
+// Mock next/navigation
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({
+    refresh: vi.fn(),
+  }),
+}));
+
 // Mock idb-storage
 vi.mock('@/lib/idb-storage', () => ({
   idbStorage: {
@@ -38,8 +45,22 @@ const mockToast = toast as unknown as {
 
 // Mock framer-motion
 vi.mock('framer-motion', () => ({
-  motion: { div: 'div', main: 'main' },
+  motion: {
+    div: ({
+      children,
+      animate,
+      transition,
+      layout,
+      initial,
+      exit,
+      ...rest
+    }: Record<string, unknown> & { children?: React.ReactNode }) => (
+      <div {...rest}>{children}</div>
+    ),
+    main: 'main',
+  },
   AnimatePresence: ({ children }: { children: React.ReactNode }) => children,
+  useReducedMotion: () => false,
 }));
 
 const defaultProps = {
@@ -47,6 +68,8 @@ const defaultProps = {
   bookTitle: 'The Great Gatsby',
   duration: 300, // 5 minutes
   startTime: Date.now() - 300000,
+  userId: 'user-1',
+  timezone: 'UTC',
   onComplete: vi.fn(),
 };
 
@@ -111,6 +134,7 @@ describe('SessionSummary', () => {
       duration: 300,
       startedAt: expect.any(String),
       endedAt: expect.any(String),
+      timezone: 'UTC',
     });
     expect(mockToast.success).toHaveBeenCalledWith('Reading session saved!');
     expect(onComplete).toHaveBeenCalled();
@@ -182,7 +206,9 @@ describe('SessionSummary', () => {
 
     expect(mockSaveReadingSession).not.toHaveBeenCalled();
     expect(mockToast.info).toHaveBeenCalledWith('Session saved offline. Will sync when connected.');
-    expect(useOfflineStore.getState().pendingSessions).toHaveLength(1);
+    const pending = useOfflineStore.getState().pendingSessions;
+    expect(pending).toHaveLength(1);
+    expect(pending[0].userId).toBe('user-1');
     expect(onComplete).toHaveBeenCalled();
   });
 
@@ -225,6 +251,27 @@ describe('SessionSummary', () => {
 
     expect(mockToast.success).toHaveBeenCalledTimes(1);
     expect(mockToast.success).toHaveBeenCalledWith('Reading session saved!');
+  });
+
+  it('shows streak reset message when wasReset is true', async () => {
+    mockSaveReadingSession.mockResolvedValue({
+      success: true,
+      data: {
+        id: 'rs-1',
+        streakUpdate: {
+          wasReset: true,
+          freezesEarned: 0,
+          freezesAvailable: 1,
+        },
+      },
+    });
+    const user = userEvent.setup();
+    render(<SessionSummary {...defaultProps} />);
+
+    await user.click(screen.getByTestId('save-session-button'));
+
+    expect(mockToast.success).toHaveBeenCalledWith('Reading session saved!');
+    expect(mockToast.success).toHaveBeenCalledWith('Fresh start! Day 1 of your new streak.');
   });
 
   it('has accessible aria attributes', () => {

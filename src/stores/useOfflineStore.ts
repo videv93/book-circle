@@ -3,6 +3,7 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import { idbStorage } from '@/lib/idb-storage';
 
 export interface PendingSession {
+  userId: string; // Security: include userId to prevent cross-user attribution
   bookId: string;
   duration: number;
   startedAt: string;

@@ -16,10 +16,21 @@ vi.mock('@/lib/idb-storage', () => ({
 // Mock framer-motion
 vi.mock('framer-motion', () => ({
   motion: {
-    div: 'div',
+    div: ({
+      children,
+      animate,
+      transition,
+      layout,
+      initial,
+      exit,
+      ...rest
+    }: Record<string, unknown> & { children?: React.ReactNode }) => (
+      <div {...rest}>{children}</div>
+    ),
     main: 'main',
   },
   AnimatePresence: ({ children }: { children: React.ReactNode }) => children,
+  useReducedMotion: () => false,
 }));
 
 // Mock the server actions
@@ -28,6 +39,28 @@ vi.mock('@/actions/books', () => ({
   updateReadingStatus: vi.fn(),
   removeFromLibrary: vi.fn(),
   restoreToLibrary: vi.fn(),
+}));
+
+// Mock presence actions (used by ReadingRoomPanel)
+vi.mock('@/actions/presence', () => ({
+  joinRoom: vi.fn().mockResolvedValue({ success: true, data: { id: 'p1' } }),
+  leaveRoom: vi.fn().mockResolvedValue({ success: true, data: { leftAt: new Date() } }),
+  getRoomMembers: vi.fn().mockResolvedValue({ success: true, data: [] }),
+}));
+
+vi.mock('@/actions/presence/updatePresenceHeartbeat', () => ({
+  updatePresenceHeartbeat: vi.fn().mockResolvedValue({ success: true, data: { updated: true } }),
+}));
+
+// Mock usePresenceChannel hook (used by ReadingRoomPanel)
+vi.mock('@/hooks/usePresenceChannel', () => ({
+  usePresenceChannel: vi.fn().mockReturnValue({
+    members: new Map(),
+    currentChannel: null,
+    isConnected: false,
+    connectionMode: 'disconnected',
+    memberCount: 0,
+  }),
 }));
 
 // Mock sessions action (used by SessionSummary via SessionTimer)

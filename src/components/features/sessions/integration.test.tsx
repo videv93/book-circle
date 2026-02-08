@@ -17,10 +17,21 @@ vi.mock('@/lib/idb-storage', () => ({
 // Mock framer-motion
 vi.mock('framer-motion', () => ({
   motion: {
-    div: 'div',
+    div: ({
+      children,
+      animate,
+      transition,
+      layout,
+      initial,
+      exit,
+      ...rest
+    }: Record<string, unknown> & { children?: React.ReactNode }) => (
+      <div {...rest}>{children}</div>
+    ),
     main: 'main',
   },
   AnimatePresence: ({ children }: { children: React.ReactNode }) => children,
+  useReducedMotion: () => false,
 }));
 
 // Mock sessions action (used by SessionSummary via SessionTimer)
@@ -30,9 +41,15 @@ vi.mock('@/actions/sessions', () => ({
   getUserSessionStats: vi.fn(),
 }));
 
+// Mock presence actions (used by SessionTimer auto-join)
+vi.mock('@/actions/presence', () => ({
+  joinRoom: vi.fn().mockResolvedValue({ success: true, data: { id: 'p1' } }),
+  getRoomMembers: vi.fn().mockResolvedValue({ success: true, data: [] }),
+}));
+
 // Mock sonner (used by SessionSummary)
 vi.mock('sonner', () => ({
-  toast: { success: vi.fn(), error: vi.fn(), info: vi.fn() },
+  toast: Object.assign(vi.fn(), { success: vi.fn(), error: vi.fn(), info: vi.fn() }),
 }));
 
 describe('Session Timer Integration', () => {

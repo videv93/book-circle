@@ -24,6 +24,7 @@ import {
 import { cn } from '@/lib/utils';
 import { updateReadingStatus, removeFromLibrary, restoreToLibrary } from '@/actions/books';
 import { SessionTimer } from '@/components/features/sessions';
+import { ReadingRoomPanel } from '@/components/features/presence';
 import { AddToLibraryButton } from './AddToLibraryButton';
 import { ReadingStatusSelector } from './ReadingStatusSelector';
 import { getReadingStatusLabel } from './types';
@@ -225,6 +226,9 @@ export function BookDetailActions({
           <Progress value={displayProgress} className="h-2" />
         </div>
       )}
+
+      {/* Reading room panel */}
+      <ReadingRoomPanel bookId={book.id} />
 
       {/* Session timer and quick actions */}
       {displayStatus === 'CURRENTLY_READING' && (

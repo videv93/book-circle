@@ -4,6 +4,8 @@ export interface SessionTimerProps {
   bookId: string;
   bookTitle: string;
   bookStatus: ReadingStatus;
+  userId?: string; // For offline queue and streak updates
+  timezone?: string; // User's timezone for streak calculations
 }
 
 export function formatTime(totalSeconds: number): string {

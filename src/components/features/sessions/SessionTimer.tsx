@@ -14,12 +14,15 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Skeleton } from '@/components/ui/skeleton';
+import { toast } from 'sonner';
 import { useTimerStore } from '@/stores/useTimerStore';
 import { useTimerInterval } from '@/hooks/useTimerInterval';
+import { joinRoom } from '@/actions/presence';
+import { getRoomMembers } from '@/actions/presence';
 import { SessionSummary } from './SessionSummary';
 import { formatTime, type SessionTimerProps } from './types';
 
-export function SessionTimer({ bookId, bookTitle, bookStatus }: SessionTimerProps) {
+export function SessionTimer({ bookId, bookTitle, bookStatus, userId = '', timezone = 'UTC' }: SessionTimerProps) {
   const isRunning = useTimerStore((s) => s.isRunning);
   const currentBookId = useTimerStore((s) => s.currentBookId);
   const currentBookTitle = useTimerStore((s) => s.currentBookTitle);
@@ -52,12 +55,28 @@ export function SessionTimer({ bookId, bookTitle, bookStatus }: SessionTimerProp
   const isActiveForThisBook = isRunning && currentBookId === bookId;
   const isActiveForOtherBook = isRunning && currentBookId !== null && currentBookId !== bookId;
 
+  const autoJoinRoom = async () => {
+    const joinResult = await joinRoom(bookId);
+    if (joinResult.success) {
+      const membersResult = await getRoomMembers(bookId);
+      if (membersResult.success) {
+        const count = membersResult.data.length;
+        if (count <= 1) {
+          toast("You're the first reader here!", { duration: 3000 });
+        } else {
+          toast(`You're reading with ${count - 1} other${count - 1 === 1 ? '' : 's'}`, { duration: 3000 });
+        }
+      }
+    }
+  };
+
   const handleStart = () => {
     if (isActiveForOtherBook) {
       setShowConflict(true);
       return;
     }
     start(bookId, bookTitle);
+    autoJoinRoom();
   };
 
   const handleStop = () => {
@@ -79,6 +98,7 @@ export function SessionTimer({ bookId, bookTitle, bookStatus }: SessionTimerProp
     reset();
     start(bookId, bookTitle);
     setShowConflict(false);
+    autoJoinRoom();
   };
 
   const handleConflictCancel = () => {
@@ -93,6 +113,8 @@ export function SessionTimer({ bookId, bookTitle, bookStatus }: SessionTimerProp
         bookTitle={bookTitle}
         duration={stoppedDuration}
         startTime={stoppedStartTime}
+        userId={userId}
+        timezone={timezone}
         onComplete={handleSummaryComplete}
       />
     );
