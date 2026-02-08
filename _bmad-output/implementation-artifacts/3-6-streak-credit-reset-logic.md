@@ -1,6 +1,6 @@
 # Story 3.6: Streak Credit & Reset Logic
 
-Status: in-progress
+Status: ready-for-dev
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
