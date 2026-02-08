@@ -1,64 +1,96 @@
-import Image from "next/image";
+import type { Metadata } from "next";
+import Link from "next/link";
+import { headers } from "next/headers";
+import { BookOpen, Users, Sparkles } from "lucide-react";
+import { auth } from "@/lib/auth";
+import { Button } from "@/components/ui/button";
+import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 
-export default function Home() {
+export const metadata: Metadata = {
+  title: "Flappy Bird — Read Together. Never Alone.",
+  description:
+    "Track your reading habits, read alongside friends, and experience ambient author presence. Build streaks, give kudos, and never read alone again.",
+  openGraph: {
+    title: "Flappy Bird — Read Together. Never Alone.",
+    description:
+      "Track your reading habits, read alongside friends, and experience ambient author presence.",
+    type: "website",
+  },
+};
+
+const valueProps = [
+  {
+    icon: BookOpen,
+    title: "Track Your Reading",
+    description:
+      "Build daily streaks, set reading goals, and watch your habits grow with every session.",
+  },
+  {
+    icon: Users,
+    title: "Read with Friends",
+    description:
+      "Give kudos, follow readers, and join reading rooms where you can feel others reading alongside you.",
+  },
+  {
+    icon: Sparkles,
+    title: "Meet Your Authors",
+    description:
+      "Experience the magic of ambient author presence — know when your favorite author inhabits the same space.",
+  },
+];
+
+export default async function Home() {
+  const headersList = await headers();
+  const session = await auth.api.getSession({ headers: headersList });
+  const isAuthenticated = !!session?.user;
+
+  const ctaText = isAuthenticated ? "Go to Home" : "Get Started";
+  const ctaHref = isAuthenticated ? "/home" : "/login";
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
+    <div className="min-h-screen bg-warm-cream dark:bg-background">
+      <main className="mx-auto flex max-w-4xl flex-col items-center px-6 py-16 md:py-24">
+        {/* Hero Section */}
+        <section className="flex flex-col items-center text-center">
+          <h1 className="text-4xl font-bold tracking-tight text-warm-text dark:text-foreground md:text-5xl">
+            Flappy Bird
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+          <p className="mt-4 max-w-md text-lg text-warm-text-muted dark:text-muted-foreground">
+            Read together. Never alone.
           </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+          <Button asChild size="lg" className="mt-8 min-h-[44px] min-w-[160px]">
+            <Link href={ctaHref}>{ctaText}</Link>
+          </Button>
+        </section>
+
+        {/* Value Propositions */}
+        <section className="mt-20 w-full">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+            {valueProps.map((prop) => (
+              <Card key={prop.title} className="text-center">
+                <CardHeader>
+                  <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+                    <prop.icon className="size-6 text-primary" />
+                  </div>
+                  <CardTitle>
+                    <h2 className="text-xl font-semibold">{prop.title}</h2>
+                  </CardTitle>
+                  <CardDescription>{prop.description}</CardDescription>
+                </CardHeader>
+              </Card>
+            ))}
+          </div>
+        </section>
+
+        {/* Bottom CTA */}
+        <section className="mt-20 flex flex-col items-center text-center">
+          <p className="max-w-sm text-warm-text-muted dark:text-muted-foreground">
+            Join readers who are building habits and discovering the joy of reading together.
+          </p>
+          <Button asChild size="lg" className="mt-6 min-h-[44px] min-w-[160px]">
+            <Link href={ctaHref}>{ctaText}</Link>
+          </Button>
+        </section>
       </main>
     </div>
   );

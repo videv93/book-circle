@@ -153,3 +153,27 @@ So that **I can easily move between main sections**.
 **And** the previous page state is preserved when I return
 
 ---
+
+## Story 1.6: Public Landing Page
+
+As a **visitor who hasn't signed up yet**,
+I want **to see a compelling landing page that explains what the app does**,
+So that **I understand the value and feel motivated to sign up**.
+
+**Acceptance Criteria:**
+
+**Given** I visit the root URL (`/`)
+**When** the page loads
+**Then** I see a hero section with the app name, tagline, and a "Get Started" CTA linking to `/login`
+**And** I see 3 value proposition cards (reading habits, social reading, author presence)
+**And** I see a bottom CTA section repeating the sign-up call to action
+**And** the page uses the Warm Hearth design system
+**And** the page is mobile-first responsive (single-column mobile, 3-column desktop)
+**And** the page has proper SEO metadata (title, description, Open Graph)
+**And** the page is a Server Component with zero client-side JS
+
+**Given** I am already logged in
+**When** I visit `/`
+**Then** the CTA button shows "Go to Home" and links to `/home`
+
+---
