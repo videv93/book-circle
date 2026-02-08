@@ -29,7 +29,9 @@ export function DayDetailPanel({ date, timezone, onClose }: DayDetailPanelProps)
 
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
+    queueMicrotask(() => {
+      if (!cancelled) setLoading(true);
+    });
 
     getDayDetail({ date, timezone }).then((result) => {
       if (!cancelled) {

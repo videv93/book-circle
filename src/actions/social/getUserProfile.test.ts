@@ -39,11 +39,20 @@ import { prisma } from '@/lib/prisma';
 
 const mockGetSession = auth.api.getSession as unknown as ReturnType<typeof vi.fn>;
 const mockUserFindUnique = prisma.user.findUnique as unknown as ReturnType<typeof vi.fn>;
-const mockFollowFindUnique = (prisma as any).follow.findUnique as ReturnType<typeof vi.fn>;
-const mockFollowCount = (prisma as any).follow.count as ReturnType<typeof vi.fn>;
-const mockStreakFindUnique = (prisma as any).userStreak.findUnique as ReturnType<typeof vi.fn>;
-const mockSessionFindMany = (prisma as any).readingSession.findMany as ReturnType<typeof vi.fn>;
-const mockUserBookFindMany = (prisma as any).userBook.findMany as ReturnType<typeof vi.fn>;
+const mockFollowFindUnique = (
+  prisma as unknown as { follow: { findUnique: ReturnType<typeof vi.fn> } }
+).follow.findUnique;
+const mockFollowCount = (prisma as unknown as { follow: { count: ReturnType<typeof vi.fn> } })
+  .follow.count;
+const mockStreakFindUnique = (
+  prisma as unknown as { userStreak: { findUnique: ReturnType<typeof vi.fn> } }
+).userStreak.findUnique;
+const mockSessionFindMany = (
+  prisma as unknown as { readingSession: { findMany: ReturnType<typeof vi.fn> } }
+).readingSession.findMany;
+const mockUserBookFindMany = (
+  prisma as unknown as { userBook: { findMany: ReturnType<typeof vi.fn> } }
+).userBook.findMany;
 
 const publicUser = {
   id: 'user-2',

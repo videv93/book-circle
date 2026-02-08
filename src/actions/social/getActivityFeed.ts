@@ -12,7 +12,7 @@ const getActivityFeedSchema = z.object({
   offset: z.number().int().min(0).optional().default(0),
 });
 
-export type GetActivityFeedInput = z.infer<typeof getActivityFeedSchema>;
+export type GetActivityFeedInput = z.input<typeof getActivityFeedSchema>;
 
 // Activity item types
 export type SessionActivity = {

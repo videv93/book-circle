@@ -82,7 +82,7 @@ export function BookDetailActions({
   // Clear optimistic overlay once props catch up
   useEffect(() => {
     if (optimistic && currentStatus === optimistic.status) {
-      setOptimistic(null);
+      queueMicrotask(() => setOptimistic(null));
     }
   }, [currentStatus, optimistic]);
 
