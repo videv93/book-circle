@@ -1,6 +1,7 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { SideNav } from './SideNav';
+import { useNotificationStore } from '@/stores/useNotificationStore';
 
 // Mock next/navigation
 const mockPathname = vi.fn(() => '/home');
@@ -16,6 +17,7 @@ describe('SideNav', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockPathname.mockReturnValue('/home');
+    useNotificationStore.setState({ unreadCount: 0 });
   });
 
   it('renders 5 navigation tabs', () => {
@@ -90,5 +92,26 @@ describe('SideNav', () => {
       link.focus();
       expect(document.activeElement).toBe(link);
     });
+  });
+
+  it('shows badge on Activity tab when unread count > 0', () => {
+    useNotificationStore.setState({ unreadCount: 7 });
+    render(<SideNav />);
+
+    expect(screen.getByLabelText('7 new notifications')).toBeInTheDocument();
+  });
+
+  it('does not show badge when unread count is 0', () => {
+    useNotificationStore.setState({ unreadCount: 0 });
+    render(<SideNav />);
+
+    expect(screen.queryByLabelText(/new notifications/)).not.toBeInTheDocument();
+  });
+
+  it('shows 99+ badge for counts over 99', () => {
+    useNotificationStore.setState({ unreadCount: 200 });
+    render(<SideNav />);
+
+    expect(screen.getByText('99+')).toBeInTheDocument();
   });
 });

@@ -5,6 +5,7 @@ import { headers } from 'next/headers';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import type { ActionResult } from '@/actions/books/types';
+import { getPusher } from '@/lib/pusher-server';
 
 const giveKudosSchema = z.object({
   sessionId: z.string().min(1),
@@ -56,9 +57,33 @@ export async function giveKudos(
         },
       });
 
-      const totalKudos = await prisma.kudos.count({
-        where: { sessionId },
-      });
+      const [totalKudos, giverUser, sessionBook] = await Promise.all([
+        prisma.kudos.count({
+          where: { sessionId },
+        }),
+        prisma.user.findUnique({
+          where: { id: session.user.id },
+          select: { name: true, image: true },
+        }),
+        prisma.readingSession.findUnique({
+          where: { id: sessionId },
+          select: { book: { select: { title: true } } },
+        }),
+      ]);
+
+      // Fire-and-forget Pusher trigger (non-blocking)
+      try {
+        const pusher = getPusher();
+        pusher?.trigger(`private-user-${targetUserId}`, 'kudos:received', {
+          fromUserName: giverUser?.name ?? 'Someone',
+          fromUserAvatar: giverUser?.image ?? null,
+          sessionId,
+          bookTitle: sessionBook?.book?.title ?? 'a book',
+          kudosId: kudos.id,
+        });
+      } catch (pusherError) {
+        console.error('Pusher trigger failed:', pusherError);
+      }
 
       return { success: true, data: { kudosId: kudos.id, totalKudos } };
     } catch (createError) {

@@ -29,6 +29,7 @@ model User {
   favoriteGenres      String[]  @default([]) @map("favorite_genres")
   showReadingActivity Boolean   @default(true) @map("show_reading_activity")
   dailyGoalMinutes    Int?      @map("daily_goal_minutes")
+  lastActivityViewedAt DateTime? @map("last_activity_viewed_at")
   createdAt           DateTime  @default(now()) @map("created_at")
   updatedAt           DateTime  @updatedAt @map("updated_at")
 

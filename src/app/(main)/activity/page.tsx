@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { auth } from '@/lib/auth';
 import { getActivityFeed } from '@/actions/social/getActivityFeed';
 import { ActivityFeed } from '@/components/features/social';
+import { ActivityPageEffect } from '@/components/features/social/ActivityPageEffect';
 import { PageHeader } from '@/components/layout/PageHeader';
 
 export default async function ActivityPage() {
@@ -35,6 +36,7 @@ export default async function ActivityPage() {
 
   return (
     <main className="container mx-auto px-4 py-8 max-w-2xl">
+      <ActivityPageEffect />
       <PageHeader title="Activity" />
       <div className="mt-6">
         <ActivityFeed

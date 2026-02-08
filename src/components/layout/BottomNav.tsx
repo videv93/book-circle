@@ -5,9 +5,12 @@ import Link from 'next/link';
 
 import { cn } from '@/lib/utils';
 import { NAV_ITEMS } from './types';
+import { NavBadge } from './NavBadge';
+import { useNotificationStore } from '@/stores/useNotificationStore';
 
 export function BottomNav() {
   const pathname = usePathname();
+  const unreadCount = useNotificationStore((s) => s.unreadCount);
 
   const isActive = (href: string) => pathname.startsWith(href);
 
@@ -43,10 +46,15 @@ export function BottomNav() {
                   : 'text-muted-foreground hover:text-foreground'
               )}
             >
-              <Icon
-                className={cn('h-5 w-5', active && 'fill-primary/20')}
-                strokeWidth={active ? 2.5 : 2}
-              />
+              <span className="relative">
+                <Icon
+                  className={cn('h-5 w-5', active && 'fill-primary/20')}
+                  strokeWidth={active ? 2.5 : 2}
+                />
+                {item.href === '/activity' && (
+                  <NavBadge count={unreadCount} />
+                )}
+              </span>
               <span>{item.label}</span>
             </Link>
           );

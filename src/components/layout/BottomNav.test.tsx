@@ -2,6 +2,8 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { BottomNav } from './BottomNav';
 
+import { useNotificationStore } from '@/stores/useNotificationStore';
+
 // Mock next/navigation
 const mockPathname = vi.fn(() => '/home');
 vi.mock('next/navigation', () => ({
@@ -16,6 +18,7 @@ describe('BottomNav', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockPathname.mockReturnValue('/home');
+    useNotificationStore.setState({ unreadCount: 0 });
   });
 
   it('renders 5 navigation tabs', () => {
@@ -115,5 +118,26 @@ describe('BottomNav', () => {
       link.focus();
       expect(document.activeElement).toBe(link);
     });
+  });
+
+  it('shows badge on Activity tab when unread count > 0', () => {
+    useNotificationStore.setState({ unreadCount: 3 });
+    render(<BottomNav />);
+
+    expect(screen.getByLabelText('3 new notifications')).toBeInTheDocument();
+  });
+
+  it('does not show badge when unread count is 0', () => {
+    useNotificationStore.setState({ unreadCount: 0 });
+    render(<BottomNav />);
+
+    expect(screen.queryByLabelText(/new notifications/)).not.toBeInTheDocument();
+  });
+
+  it('shows 99+ badge for counts over 99', () => {
+    useNotificationStore.setState({ unreadCount: 150 });
+    render(<BottomNav />);
+
+    expect(screen.getByText('99+')).toBeInTheDocument();
   });
 });

@@ -4,6 +4,7 @@ export interface NavItem {
   href: string;
   icon: LucideIcon;
   label: string;
+  badgeCount?: number;
 }
 
 export const NAV_ITEMS: NavItem[] = [

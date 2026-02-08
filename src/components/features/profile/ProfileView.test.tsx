@@ -76,6 +76,7 @@ describe('ProfileView', () => {
     favoriteGenres: ['Fiction', 'Mystery'],
     showReadingActivity: true,
     dailyGoalMinutes: null,
+    lastActivityViewedAt: null,
     createdAt: new Date('2024-01-15'),
     updatedAt: new Date('2024-01-15'),
   };

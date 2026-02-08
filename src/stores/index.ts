@@ -2,3 +2,5 @@
 export { useTimerStore } from './useTimerStore';
 export { useOfflineStore } from './useOfflineStore';
 export type { PendingSession } from './useOfflineStore';
+export { useNotificationStore } from './useNotificationStore';
+export type { KudosEvent } from './useNotificationStore';

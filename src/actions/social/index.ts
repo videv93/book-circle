@@ -39,3 +39,8 @@ export type {
   GetKudosForSessionInput,
   KudosForSessionData,
 } from './getKudosForSession';
+
+export { getUnreadKudosCount } from './getUnreadKudosCount';
+export type { UnreadKudosCountData } from './getUnreadKudosCount';
+
+export { markActivityViewed } from './markActivityViewed';
