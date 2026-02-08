@@ -1,6 +1,6 @@
 # Story 3.2: Save Reading Session
 
-Status: review
+Status: done
 
 ## Story
 
