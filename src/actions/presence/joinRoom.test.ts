@@ -16,6 +16,7 @@ vi.mock('@/lib/auth', () => ({
 const mockFindFirst = vi.fn();
 const mockCreate = vi.fn();
 const mockUpdate = vi.fn();
+const mockClaimFindFirst = vi.fn();
 
 vi.mock('@/lib/prisma', () => ({
   prisma: {
@@ -25,6 +26,9 @@ vi.mock('@/lib/prisma', () => ({
           findFirst: mockFindFirst,
           create: mockCreate,
           update: mockUpdate,
+        },
+        authorClaim: {
+          findFirst: mockClaimFindFirst,
         },
       })
     ),
@@ -50,6 +54,7 @@ describe('joinRoom', () => {
 
   it('creates new presence when user not in room', async () => {
     mockFindFirst.mockResolvedValue(null);
+    mockClaimFindFirst.mockResolvedValue(null);
     const mockPresence = {
       id: 'presence-1',
       userId: 'user-1',
@@ -66,7 +71,7 @@ describe('joinRoom', () => {
     expect(result.success).toBe(true);
     if (result.success) expect(result.data.id).toBe('presence-1');
     expect(mockCreate).toHaveBeenCalledWith({
-      data: { userId: 'user-1', bookId: 'book-1' },
+      data: { userId: 'user-1', bookId: 'book-1', isAuthor: false },
     });
   });
 
@@ -101,6 +106,7 @@ describe('joinRoom', () => {
 
   it('queries for active presence (leftAt null)', async () => {
     mockFindFirst.mockResolvedValue(null);
+    mockClaimFindFirst.mockResolvedValue(null);
     mockCreate.mockResolvedValue({ id: 'p1' });
 
     await joinRoom('book-1');

@@ -40,10 +40,20 @@ export async function joinRoom(bookId: string): Promise<ActionResult<RoomPresenc
         });
       }
 
+      // Check if user is a verified author of this book
+      const approvedClaim = await tx.authorClaim.findFirst({
+        where: {
+          userId: session.user.id,
+          bookId: validated.bookId,
+          status: 'APPROVED',
+        },
+      });
+
       return tx.roomPresence.create({
         data: {
           userId: session.user.id,
           bookId: validated.bookId,
+          isAuthor: !!approvedClaim,
         },
       });
     });

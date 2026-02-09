@@ -65,6 +65,13 @@ vi.mock('@/actions/sessions', () => ({
   saveReadingSession: vi.fn(),
 }));
 
+// Mock AuthorEngagementMetrics
+vi.mock('@/components/features/authors/AuthorEngagementMetrics', () => ({
+  AuthorEngagementMetrics: ({ bookId }: { bookId: string }) => (
+    <div data-testid="mock-engagement-metrics">Engagement for {bookId}</div>
+  ),
+}));
+
 vi.mock('./BookDetailActions', () => ({
   BookDetailActions: ({
     isInLibrary,

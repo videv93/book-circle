@@ -11,6 +11,9 @@ vi.mock('@/lib/prisma', () => ({
       count: vi.fn(),
       findFirst: vi.fn(),
     },
+    authorClaim: {
+      findFirst: vi.fn(),
+    },
   },
 }));
 
@@ -56,6 +59,7 @@ describe('getBookById', () => {
       .mockResolvedValueOnce(10) // totalReaders
       .mockResolvedValueOnce(3); // currentlyReading
     vi.mocked(auth.api.getSession).mockResolvedValue(null);
+    vi.mocked(prisma.authorClaim.findFirst).mockResolvedValue(null);
 
     const result = await getBookById('book-123');
 
@@ -75,6 +79,7 @@ describe('getBookById', () => {
       .mockResolvedValueOnce(5)
       .mockResolvedValueOnce(2);
     vi.mocked(auth.api.getSession).mockResolvedValue(null);
+    vi.mocked(prisma.authorClaim.findFirst).mockResolvedValue(null);
 
     const result = await getBookById('9780123456789');
 
@@ -142,6 +147,7 @@ describe('getBookById', () => {
       .mockResolvedValueOnce(3);
     vi.mocked(auth.api.getSession).mockResolvedValue(mockSession);
     vi.mocked(prisma.userBook.findFirst).mockResolvedValue(mockUserBook);
+    vi.mocked(prisma.authorClaim.findFirst).mockResolvedValue(null);
 
     const result = await getBookById('book-123');
 
@@ -163,6 +169,7 @@ describe('getBookById', () => {
       .mockResolvedValueOnce(3);
     vi.mocked(auth.api.getSession).mockResolvedValue(mockSession);
     vi.mocked(prisma.userBook.findFirst).mockResolvedValue(null);
+    vi.mocked(prisma.authorClaim.findFirst).mockResolvedValue(null);
 
     const result = await getBookById('book-123');
 

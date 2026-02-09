@@ -1,10 +1,15 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { BookOpen } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { BookData } from '@/actions/books';
 import { AuthorVerifiedBadge } from './AuthorVerifiedBadge';
+import { ClaimStatusBadge } from '@/components/features/authors/ClaimStatusBadge';
+import { AuthorClaimForm } from '@/components/features/authors/AuthorClaimForm';
+import { getClaimStatus } from '@/actions/authors/getClaimStatus';
+import type { ClaimStatusData } from '@/actions/authors/getClaimStatus';
 
 interface BookDetailHeroProps {
   book: BookData;
@@ -17,6 +22,25 @@ export function BookDetailHero({
   authorVerified,
   className,
 }: BookDetailHeroProps) {
+  const [claimFormOpen, setClaimFormOpen] = useState(false);
+  const [claimStatus, setClaimStatus] = useState<ClaimStatusData | null>(null);
+
+  const isExternal = 'isExternal' in book && book.isExternal;
+
+  useEffect(() => {
+    if (isExternal) return;
+
+    getClaimStatus(book.id).then((result) => {
+      if (result.success) {
+        setClaimStatus(result.data);
+      }
+    });
+  }, [book.id, isExternal]);
+
+  const handleClaimSuccess = () => {
+    setClaimStatus({ hasClaim: true, status: 'PENDING' });
+  };
+
   return (
     <div className={cn('relative', className)} data-testid="book-detail-hero">
       {/* Gradient background for immersive feel */}
@@ -62,6 +86,23 @@ export function BookDetailHero({
           {authorVerified && <AuthorVerifiedBadge />}
         </div>
 
+        {/* Author claim section */}
+        {!isExternal && (
+          <div className="mt-2" data-testid="author-claim-section">
+            {claimStatus?.hasClaim ? (
+              <ClaimStatusBadge status={claimStatus.status!} />
+            ) : (
+              <button
+                onClick={() => setClaimFormOpen(true)}
+                className="text-sm text-muted-foreground underline underline-offset-2 hover:text-foreground transition-colors min-h-[44px] px-2 flex items-center"
+                data-testid="are-you-author-link"
+              >
+                Are you the author?
+              </button>
+            )}
+          </div>
+        )}
+
         {/* Year and page count */}
         {(book.publishedYear || book.pageCount) && (
           <p
@@ -74,6 +115,16 @@ export function BookDetailHero({
           </p>
         )}
       </div>
+
+      {/* Claim form sheet */}
+      {!isExternal && (
+        <AuthorClaimForm
+          bookId={book.id}
+          open={claimFormOpen}
+          onOpenChange={setClaimFormOpen}
+          onSuccess={handleClaimSuccess}
+        />
+      )}
     </div>
   );
 }

@@ -6,6 +6,7 @@ import { BookDescription } from './BookDescription';
 import { BookReadersCount } from './BookReadersCount';
 import { BookDetailActions } from './BookDetailActions';
 import { SessionList } from '@/components/features/sessions/SessionList';
+import { AuthorEngagementMetrics } from '@/components/features/authors/AuthorEngagementMetrics';
 import type { BookDetailData } from '@/actions/books';
 import type { BookSearchResult } from '@/services/books/types';
 import type { ReadingStatus, ReadingSession } from '@prisma/client';
@@ -70,6 +71,12 @@ export function BookDetail({ data, initialSessions = [], initialCursor = null }:
   return (
     <div data-testid="book-detail">
       <BookDetailHero book={book} authorVerified={authorVerified} />
+
+      {authorVerified && (
+        <div className="px-4 py-3 border-t border-border">
+          <AuthorEngagementMetrics bookId={book.id} />
+        </div>
+      )}
 
       <BookReadersCount
         totalReaders={stats.totalReaders}

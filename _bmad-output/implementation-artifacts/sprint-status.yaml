@@ -65,7 +65,7 @@ development_status:
   3-3-session-history: done
   3-4-daily-reading-goal: done
   3-5-streak-ring-display: done
-  3-6-streak-credit-reset-logic: ready-for-dev
+  3-6-streak-credit-reset-logic: review
   3-7-streak-freeze: done
   3-8-streak-history: done
   epic-3-retrospective: optional
@@ -86,7 +86,7 @@ development_status:
   5-2-join-reading-room: done
   5-3-see-room-occupants: done
   5-4-leave-reading-room: done
-  5-5-author-claim-verification: backlog
+  5-5-author-claim-verification: review
   5-6-author-presence-display: backlog
   5-7-author-join-notification: backlog
   epic-5-retrospective: optional

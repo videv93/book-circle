@@ -124,6 +124,14 @@ export async function getBookById(
       }
     }
 
+    // Check if any user has an approved author claim for this book
+    const approvedClaim = await prisma.authorClaim.findFirst({
+      where: {
+        bookId: book.id,
+        status: 'APPROVED',
+      },
+    });
+
     return {
       success: true,
       data: {
@@ -133,7 +141,7 @@ export async function getBookById(
           currentlyReading,
         },
         userStatus,
-        authorVerified: false, // Placeholder for future author claim feature
+        authorVerified: !!approvedClaim,
       },
     };
   } catch (error) {

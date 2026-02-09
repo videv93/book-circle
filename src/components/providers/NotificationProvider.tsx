@@ -48,6 +48,29 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
         store.incrementUnread();
         store.queueToast(data);
       });
+
+      channel.bind(
+        'author:claim-approved',
+        (data: { bookTitle: string; claimId: string }) => {
+          toast(
+            `You're now verified as the author of ${data.bookTitle}!`,
+            {
+              duration: 6000,
+              className: 'border-l-4 border-l-[#eab308]',
+            }
+          );
+        }
+      );
+
+      channel.bind(
+        'author:claim-rejected',
+        (data: { bookTitle: string; claimId: string }) => {
+          toast(
+            `Your author claim for ${data.bookTitle} was not approved.`,
+            { duration: 6000 }
+          );
+        }
+      );
     } catch (error) {
       console.error('Pusher subscription error:', error);
     }
@@ -57,6 +80,8 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       if (pusher && userId) {
         try {
           channelRef.current?.unbind('kudos:received');
+          channelRef.current?.unbind('author:claim-approved');
+          channelRef.current?.unbind('author:claim-rejected');
           pusher.unsubscribe(`private-user-${userId}`);
         } catch (error) {
           console.error('Pusher cleanup error:', error);

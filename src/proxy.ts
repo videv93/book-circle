@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 const publicRoutes = ['/', '/login', '/api/auth'];
-const protectedRoutes = ['/home', '/library', '/profile', '/activity', '/search', '/user'];
+const protectedRoutes = ['/home', '/library', '/profile', '/activity', '/search', '/user', '/admin'];
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;

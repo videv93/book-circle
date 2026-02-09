@@ -8,6 +8,19 @@ vi.mock('@/lib/motion', () => ({
   shouldReduceMotion: vi.fn(() => false),
 }));
 
+// Mock getClaimStatus
+vi.mock('@/actions/authors/getClaimStatus', () => ({
+  getClaimStatus: vi.fn().mockResolvedValue({
+    success: true,
+    data: { hasClaim: false },
+  }),
+}));
+
+// Mock AuthorClaimForm (Sheet-based component)
+vi.mock('@/components/features/authors/AuthorClaimForm', () => ({
+  AuthorClaimForm: () => null,
+}));
+
 // Mock window.matchMedia for tooltip
 beforeAll(() => {
   Object.defineProperty(window, 'matchMedia', {
@@ -130,5 +143,21 @@ describe('BookDetailHero', () => {
 
     const hero = screen.getByTestId('book-detail-hero');
     expect(hero.className).toContain('custom-class');
+  });
+
+  it('renders "Are you the author?" link for non-external books', () => {
+    render(<BookDetailHero book={mockBook} />);
+
+    expect(screen.getByTestId('are-you-author-link')).toBeInTheDocument();
+  });
+
+  it('does not render author claim section for external books', () => {
+    const externalBook = {
+      ...mockBook,
+      isExternal: true as const,
+    };
+    render(<BookDetailHero book={externalBook} />);
+
+    expect(screen.queryByTestId('author-claim-section')).not.toBeInTheDocument();
   });
 });

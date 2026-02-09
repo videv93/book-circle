@@ -10,6 +10,20 @@ datasource db {
   provider = "postgresql"
 }
 
+// Claim status for AuthorClaim
+enum ClaimStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+// Verification method for AuthorClaim
+enum VerificationMethod {
+  AMAZON
+  WEBSITE
+  MANUAL
+}
+
 // Reading status enum for UserBook
 enum ReadingStatus {
   CURRENTLY_READING
@@ -44,6 +58,8 @@ model User {
   kudosGiven      Kudos[]         @relation("KudosGiven")
   kudosReceived   Kudos[]         @relation("KudosReceived")
   roomPresences   RoomPresence[]
+  authorClaims    AuthorClaim[]  @relation("author_claims")
+  reviewedClaims  AuthorClaim[]  @relation("reviewed_claims")
 
   @@map("users")
 }
@@ -108,6 +124,7 @@ model Book {
   userBooks       UserBook[]
   readingSessions ReadingSession[]
   roomPresences   RoomPresence[]
+  authorClaims    AuthorClaim[]
 
   @@index([isbn10])
   @@index([isbn13])
@@ -243,4 +260,27 @@ model RoomPresence {
   @@index([bookId])
   @@index([bookId, leftAt])
   @@map("room_presences")
+}
+
+model AuthorClaim {
+  id                 String             @id @default(cuid())
+  userId             String             @map("user_id")
+  bookId             String             @map("book_id")
+  verificationMethod VerificationMethod @map("verification_method")
+  verificationUrl    String?            @map("verification_url")
+  verificationText   String?            @map("verification_text")
+  status             ClaimStatus        @default(PENDING)
+  reviewedById       String?            @map("reviewed_by_id")
+  reviewedAt         DateTime?          @map("reviewed_at")
+  createdAt          DateTime           @default(now()) @map("created_at")
+  updatedAt          DateTime           @updatedAt @map("updated_at")
+
+  user               User               @relation("author_claims", fields: [userId], references: [id], onDelete: Cascade)
+  reviewer           User?              @relation("reviewed_claims", fields: [reviewedById], references: [id])
+  book               Book               @relation(fields: [bookId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, bookId])
+  @@index([status])
+  @@index([bookId])
+  @@map("author_claims")
 }
