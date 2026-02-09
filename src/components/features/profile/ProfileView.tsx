@@ -10,8 +10,11 @@ import { ProfileForm } from './ProfileForm';
 import { updateProfile } from '@/actions/profile';
 import { signOut } from '@/lib/auth-client';
 import type { ProfileInput } from '@/lib/validation/profile';
+import Link from 'next/link';
+import { Shield } from 'lucide-react';
 import { ReadingStats } from '@/components/features/sessions/ReadingStats';
 import { StreakHistoryView } from '@/components/features/streaks';
+import { isAdminRole } from '@/lib/admin';
 import type { SessionStats } from '@/actions/sessions/getUserSessionStats';
 import type { StreakData } from '@/actions/streaks';
 import type { User } from '@prisma/client';
@@ -113,7 +116,15 @@ export function ProfileView({ user: initialUser, sessionStats, streakData }: Pro
         )}
       </CardContent>
 
-      <CardFooter className="pt-6">
+      <CardFooter className="flex flex-col gap-3 pt-6">
+        {isAdminRole(user.role) && (
+          <Button variant="outline" asChild className="w-full">
+            <Link href="/admin">
+              <Shield className="mr-2 h-4 w-4" />
+              Admin
+            </Link>
+          </Button>
+        )}
         <Button
           variant="outline"
           onClick={handleSignOut}

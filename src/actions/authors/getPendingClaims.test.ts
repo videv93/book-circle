@@ -14,6 +14,9 @@ vi.mock('@/lib/auth', () => ({
 
 vi.mock('@/lib/prisma', () => ({
   prisma: {
+    user: {
+      findUnique: vi.fn(),
+    },
     authorClaim: {
       findMany: vi.fn(),
     },
@@ -21,17 +24,18 @@ vi.mock('@/lib/prisma', () => ({
 }));
 
 vi.mock('@/lib/admin', () => ({
-  isAdmin: vi.fn(),
+  isAdmin: vi.fn((user: { id: string; role?: string }) => {
+    return user.role === 'ADMIN' || user.role === 'SUPER_ADMIN';
+  }),
 }));
 
 import { getPendingClaims } from './getPendingClaims';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import { isAdmin } from '@/lib/admin';
 
 const mockGetSession = auth.api.getSession as unknown as ReturnType<typeof vi.fn>;
+const mockUserFindUnique = prisma.user.findUnique as unknown as ReturnType<typeof vi.fn>;
 const mockFindMany = prisma.authorClaim.findMany as unknown as ReturnType<typeof vi.fn>;
-const mockIsAdmin = isAdmin as unknown as ReturnType<typeof vi.fn>;
 
 describe('getPendingClaims', () => {
   beforeEach(() => {
@@ -48,7 +52,16 @@ describe('getPendingClaims', () => {
 
   it('returns error when user is not admin', async () => {
     mockGetSession.mockResolvedValue({ user: { id: 'regular-user' } });
-    mockIsAdmin.mockReturnValue(false);
+    mockUserFindUnique.mockResolvedValue({ id: 'regular-user', role: 'USER' });
+
+    const result = await getPendingClaims();
+
+    expect(result).toEqual({ success: false, error: 'Forbidden' });
+  });
+
+  it('returns error when user not found in database', async () => {
+    mockGetSession.mockResolvedValue({ user: { id: 'ghost-user' } });
+    mockUserFindUnique.mockResolvedValue(null);
 
     const result = await getPendingClaims();
 
@@ -57,7 +70,7 @@ describe('getPendingClaims', () => {
 
   it('returns pending claims for admin', async () => {
     mockGetSession.mockResolvedValue({ user: { id: 'admin-1' } });
-    mockIsAdmin.mockReturnValue(true);
+    mockUserFindUnique.mockResolvedValue({ id: 'admin-1', role: 'ADMIN' });
     const mockClaims = [
       {
         id: 'claim-1',
@@ -86,7 +99,7 @@ describe('getPendingClaims', () => {
 
   it('returns empty array when no pending claims', async () => {
     mockGetSession.mockResolvedValue({ user: { id: 'admin-1' } });
-    mockIsAdmin.mockReturnValue(true);
+    mockUserFindUnique.mockResolvedValue({ id: 'admin-1', role: 'ADMIN' });
     mockFindMany.mockResolvedValue([]);
 
     const result = await getPendingClaims();
@@ -96,7 +109,7 @@ describe('getPendingClaims', () => {
 
   it('returns error on database failure', async () => {
     mockGetSession.mockResolvedValue({ user: { id: 'admin-1' } });
-    mockIsAdmin.mockReturnValue(true);
+    mockUserFindUnique.mockResolvedValue({ id: 'admin-1', role: 'ADMIN' });
     mockFindMany.mockRejectedValue(new Error('DB error'));
 
     const result = await getPendingClaims();

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 import { auth } from '@/lib/auth';
 import { getPusher } from '@/lib/pusher-server';
+import { prisma } from '@/lib/prisma';
 
 export async function POST(request: NextRequest) {
   const headersList = await headers();
@@ -27,11 +28,24 @@ export async function POST(request: NextRequest) {
   }
 
   if (isPresenceRoomChannel) {
+    const bookId = channel.replace('presence-room-', '');
+    let isAuthor = false;
+    try {
+      const claim = await prisma.authorClaim.findFirst({
+        where: { bookId, userId: session.user.id, status: 'APPROVED' },
+        select: { id: true },
+      });
+      isAuthor = !!claim;
+    } catch {
+      // Non-critical — default to false
+    }
+
     const authResponse = pusher.authorizeChannel(socketId, channel, {
       user_id: session.user.id,
       user_info: {
         name: session.user.name || 'Anonymous',
         avatarUrl: session.user.image || null,
+        isAuthor,
       },
     });
     return NextResponse.json(authResponse);

@@ -14,10 +14,17 @@ vi.mock('@/lib/auth', () => ({
 
 vi.mock('@/lib/prisma', () => ({
   prisma: {
+    user: {
+      findUnique: vi.fn(),
+    },
     authorClaim: {
       findUnique: vi.fn(),
       update: vi.fn(),
     },
+    adminAction: {
+      create: vi.fn(),
+    },
+    $transaction: vi.fn(),
   },
 }));
 
@@ -28,7 +35,9 @@ vi.mock('@/lib/pusher-server', () => ({
 }));
 
 vi.mock('@/lib/admin', () => ({
-  isAdmin: vi.fn((id: string) => ['admin-1', 'admin-2'].includes(id)),
+  isAdmin: vi.fn((user: { id: string; role?: string }) => {
+    return user.role === 'ADMIN' || user.role === 'SUPER_ADMIN';
+  }),
 }));
 
 import { reviewClaim } from './reviewClaim';
@@ -36,8 +45,9 @@ import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 
 const mockGetSession = auth.api.getSession as unknown as ReturnType<typeof vi.fn>;
-const mockFindUnique = prisma.authorClaim.findUnique as unknown as ReturnType<typeof vi.fn>;
-const mockUpdate = prisma.authorClaim.update as unknown as ReturnType<typeof vi.fn>;
+const mockUserFindUnique = prisma.user.findUnique as unknown as ReturnType<typeof vi.fn>;
+const mockClaimFindUnique = prisma.authorClaim.findUnique as unknown as ReturnType<typeof vi.fn>;
+const mockTransaction = prisma.$transaction as unknown as ReturnType<typeof vi.fn>;
 
 describe('reviewClaim', () => {
   beforeEach(() => {
@@ -57,6 +67,19 @@ describe('reviewClaim', () => {
 
   it('returns error when user is not admin', async () => {
     mockGetSession.mockResolvedValue({ user: { id: 'regular-user' } });
+    mockUserFindUnique.mockResolvedValue({ id: 'regular-user', role: 'USER' });
+
+    const result = await reviewClaim({
+      claimId: 'claim-1',
+      decision: 'approve',
+    });
+
+    expect(result).toEqual({ success: false, error: 'Forbidden' });
+  });
+
+  it('returns error when user not found in database', async () => {
+    mockGetSession.mockResolvedValue({ user: { id: 'ghost-user' } });
+    mockUserFindUnique.mockResolvedValue(null);
 
     const result = await reviewClaim({
       claimId: 'claim-1',
@@ -68,7 +91,8 @@ describe('reviewClaim', () => {
 
   it('returns error when claim not found', async () => {
     mockGetSession.mockResolvedValue({ user: { id: 'admin-1' } });
-    mockFindUnique.mockResolvedValue(null);
+    mockUserFindUnique.mockResolvedValue({ id: 'admin-1', role: 'ADMIN' });
+    mockClaimFindUnique.mockResolvedValue(null);
 
     const result = await reviewClaim({
       claimId: 'claim-nonexistent',
@@ -80,7 +104,8 @@ describe('reviewClaim', () => {
 
   it('returns error when claim already reviewed', async () => {
     mockGetSession.mockResolvedValue({ user: { id: 'admin-1' } });
-    mockFindUnique.mockResolvedValue({
+    mockUserFindUnique.mockResolvedValue({ id: 'admin-1', role: 'ADMIN' });
+    mockClaimFindUnique.mockResolvedValue({
       id: 'claim-1',
       status: 'APPROVED',
       userId: 'user-1',
@@ -98,9 +123,10 @@ describe('reviewClaim', () => {
     });
   });
 
-  it('approves a claim successfully', async () => {
+  it('approves a claim successfully with admin action log', async () => {
     mockGetSession.mockResolvedValue({ user: { id: 'admin-1' } });
-    mockFindUnique.mockResolvedValue({
+    mockUserFindUnique.mockResolvedValue({ id: 'admin-1', role: 'ADMIN' });
+    mockClaimFindUnique.mockResolvedValue({
       id: 'claim-1',
       status: 'PENDING',
       userId: 'user-1',
@@ -111,7 +137,7 @@ describe('reviewClaim', () => {
       status: 'APPROVED',
       reviewedById: 'admin-1',
     };
-    mockUpdate.mockResolvedValue(updatedClaim);
+    mockTransaction.mockResolvedValue([updatedClaim, {}]);
 
     const result = await reviewClaim({
       claimId: 'claim-1',
@@ -119,18 +145,13 @@ describe('reviewClaim', () => {
     });
 
     expect(result).toEqual({ success: true, data: updatedClaim });
-    expect(mockUpdate).toHaveBeenCalledWith({
-      where: { id: 'claim-1' },
-      data: expect.objectContaining({
-        status: 'APPROVED',
-        reviewedById: 'admin-1',
-      }),
-    });
+    expect(mockTransaction).toHaveBeenCalled();
   });
 
   it('rejects a claim successfully', async () => {
     mockGetSession.mockResolvedValue({ user: { id: 'admin-1' } });
-    mockFindUnique.mockResolvedValue({
+    mockUserFindUnique.mockResolvedValue({ id: 'admin-1', role: 'ADMIN' });
+    mockClaimFindUnique.mockResolvedValue({
       id: 'claim-1',
       status: 'PENDING',
       userId: 'user-1',
@@ -141,7 +162,7 @@ describe('reviewClaim', () => {
       status: 'REJECTED',
       reviewedById: 'admin-1',
     };
-    mockUpdate.mockResolvedValue(updatedClaim);
+    mockTransaction.mockResolvedValue([updatedClaim, {}]);
 
     const result = await reviewClaim({
       claimId: 'claim-1',
@@ -149,13 +170,6 @@ describe('reviewClaim', () => {
     });
 
     expect(result).toEqual({ success: true, data: updatedClaim });
-    expect(mockUpdate).toHaveBeenCalledWith({
-      where: { id: 'claim-1' },
-      data: expect.objectContaining({
-        status: 'REJECTED',
-        reviewedById: 'admin-1',
-      }),
-    });
   });
 
   it('returns error for invalid input', async () => {

@@ -4,6 +4,7 @@ export interface PresenceMember {
   id: string;
   name: string;
   avatarUrl: string | null;
+  isAuthor?: boolean;
 }
 
 export type ConnectionMode = 'realtime' | 'polling' | 'disconnected';

@@ -45,6 +45,8 @@ export default function PresenceTestPage() {
         subscription_error: 'SUB_ERROR',
         polling_fallback: 'FALLBACK',
         poll_update: 'POLL',
+        author_joined: 'AUTHOR_JOINED',
+        author_left: 'AUTHOR_LEFT',
       };
       addLog(typeMap[event.type] || event.type, event.detail);
     },

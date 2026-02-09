@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { headers } from 'next/headers';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { getPusher } from '@/lib/pusher-server';
 import type { ActionResult } from '@/actions/books/types';
 import type { RoomPresence } from '@prisma/client';
 
@@ -57,6 +58,23 @@ export async function joinRoom(bookId: string): Promise<ActionResult<RoomPresenc
         },
       });
     });
+
+    // Notify room occupants when a verified author joins
+    if (presence.isAuthor) {
+      try {
+        const pusher = getPusher();
+        await pusher?.trigger(
+          `presence-room-${validated.bookId}`,
+          'room:author-joined',
+          {
+            authorId: session.user.id,
+            authorName: session.user.name || 'The author',
+          }
+        );
+      } catch (e) {
+        console.error('Pusher trigger failed:', e);
+      }
+    }
 
     return { success: true, data: presence };
   } catch (error) {

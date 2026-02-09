@@ -21,6 +21,30 @@ vi.mock('@/components/features/authors/AuthorClaimForm', () => ({
   AuthorClaimForm: () => null,
 }));
 
+// Mock getAuthorPresence
+vi.mock('@/actions/authors/getAuthorPresence', () => ({
+  getAuthorPresence: vi.fn().mockResolvedValue({
+    success: true,
+    data: null,
+  }),
+}));
+
+// Mock next/link (needed by AuthorShimmerBadge)
+vi.mock('next/link', () => ({
+  default: ({
+    children,
+    href,
+    ...props
+  }: {
+    children: React.ReactNode;
+    href: string;
+  }) => (
+    <a href={href} {...props}>
+      {children}
+    </a>
+  ),
+}));
+
 // Mock window.matchMedia for tooltip
 beforeAll(() => {
   Object.defineProperty(window, 'matchMedia', {

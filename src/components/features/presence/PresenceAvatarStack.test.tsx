@@ -235,4 +235,56 @@ describe('PresenceAvatarStack', () => {
     const animateAttr = innerDiv?.getAttribute('data-motion-animate');
     expect(animateAttr).toContain('scale');
   });
+
+  // --- Author presence (Story 5.6) ---
+
+  it('sorts author first in the avatar stack', () => {
+    const members = new Map<string, PresenceMember>();
+    members.set('u1', { id: 'u1', name: 'Reader', avatarUrl: null });
+    members.set('u2', { id: 'u2', name: 'Author Jane', avatarUrl: null, isAuthor: true });
+    const { container } = render(
+      <PresenceAvatarStack members={members} />
+    );
+    const avatars = container.querySelectorAll('[title]');
+    expect(avatars[0]).toHaveAttribute('title', 'Author Jane');
+    expect(avatars[1]).toHaveAttribute('title', 'Reader');
+  });
+
+  it('applies golden ring styling to author avatar', () => {
+    const members = new Map<string, PresenceMember>();
+    members.set('u1', { id: 'u1', name: 'Author Jane', avatarUrl: null, isAuthor: true });
+    const { container } = render(
+      <PresenceAvatarStack members={members} />
+    );
+    const authorAvatar = container.querySelector('[title="Author Jane"]');
+    expect(authorAvatar?.className).toContain('ring-2');
+    expect(authorAvatar?.className).toContain('border-[var(--author-shimmer,#eab308)]');
+  });
+
+  it('does not apply golden ring to non-author avatar', () => {
+    const members = new Map<string, PresenceMember>();
+    members.set('u1', { id: 'u1', name: 'Reader', avatarUrl: null });
+    const { container } = render(
+      <PresenceAvatarStack members={members} />
+    );
+    const avatar = container.querySelector('[title="Reader"]');
+    expect(avatar?.className).not.toContain('ring-2');
+    expect(avatar?.className).toContain('border-white');
+  });
+
+  it('includes "including the author" in aria-label when author present', () => {
+    const members = new Map<string, PresenceMember>();
+    members.set('u1', { id: 'u1', name: 'Reader', avatarUrl: null });
+    members.set('u2', { id: 'u2', name: 'Author', avatarUrl: null, isAuthor: true });
+    render(<PresenceAvatarStack members={members} />);
+    const group = screen.getByRole('group');
+    expect(group).toHaveAttribute('aria-label', '2 readers in room including the author');
+  });
+
+  it('does not include "including the author" when no author present', () => {
+    const members = createMembers(2);
+    render(<PresenceAvatarStack members={members} />);
+    const group = screen.getByRole('group');
+    expect(group).toHaveAttribute('aria-label', '2 readers in room');
+  });
 });

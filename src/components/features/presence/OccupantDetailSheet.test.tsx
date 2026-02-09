@@ -245,4 +245,75 @@ describe('OccupantDetailSheet', () => {
     );
     expect(screen.getByTestId('occupant-list')).toBeInTheDocument();
   });
+
+  // --- Author presence (Story 5.6) ---
+
+  it('sorts author to top of the list', () => {
+    const members = new Map<string, PresenceMember>();
+    members.set('u1', { id: 'u1', name: 'Reader One', avatarUrl: null });
+    members.set('u2', { id: 'u2', name: 'Author Jane', avatarUrl: null, isAuthor: true });
+    render(
+      <OccupantDetailSheet
+        open={true}
+        onOpenChange={vi.fn()}
+        members={members}
+      />
+    );
+    const links = screen.getAllByRole('link');
+    expect(links[0]).toHaveAttribute('href', '/profile/u2');
+    expect(links[1]).toHaveAttribute('href', '/profile/u1');
+  });
+
+  it('shows "Author" badge for verified author', () => {
+    const members = new Map<string, PresenceMember>();
+    members.set('u1', { id: 'u1', name: 'Author Jane', avatarUrl: null, isAuthor: true });
+    render(
+      <OccupantDetailSheet
+        open={true}
+        onOpenChange={vi.fn()}
+        members={members}
+      />
+    );
+    expect(screen.getByTestId('author-badge')).toHaveTextContent('Author');
+  });
+
+  it('displays author name with "Author •" prefix', () => {
+    const members = new Map<string, PresenceMember>();
+    members.set('u1', { id: 'u1', name: 'Jane Doe', avatarUrl: null, isAuthor: true });
+    render(
+      <OccupantDetailSheet
+        open={true}
+        onOpenChange={vi.fn()}
+        members={members}
+      />
+    );
+    expect(screen.getByText(/Author.*Jane Doe/)).toBeInTheDocument();
+  });
+
+  it('includes "including the author" in title when author present', () => {
+    const members = new Map<string, PresenceMember>();
+    members.set('u1', { id: 'u1', name: 'Reader', avatarUrl: null });
+    members.set('u2', { id: 'u2', name: 'Author', avatarUrl: null, isAuthor: true });
+    render(
+      <OccupantDetailSheet
+        open={true}
+        onOpenChange={vi.fn()}
+        members={members}
+      />
+    );
+    expect(screen.getByText('2 readers in this room including the author')).toBeInTheDocument();
+  });
+
+  it('has author profile aria-label for author row', () => {
+    const members = new Map<string, PresenceMember>();
+    members.set('u1', { id: 'u1', name: 'Jane', avatarUrl: null, isAuthor: true });
+    render(
+      <OccupantDetailSheet
+        open={true}
+        onOpenChange={vi.fn()}
+        members={members}
+      />
+    );
+    expect(screen.getByLabelText("Author Jane's profile")).toBeInTheDocument();
+  });
 });

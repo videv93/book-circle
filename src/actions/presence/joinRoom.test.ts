@@ -18,6 +18,11 @@ const mockCreate = vi.fn();
 const mockUpdate = vi.fn();
 const mockClaimFindFirst = vi.fn();
 
+const mockPusherTrigger = vi.fn().mockResolvedValue(undefined);
+vi.mock('@/lib/pusher-server', () => ({
+  getPusher: () => ({ trigger: mockPusherTrigger }),
+}));
+
 vi.mock('@/lib/prisma', () => ({
   prisma: {
     $transaction: vi.fn((fn: (tx: unknown) => unknown) =>
@@ -42,7 +47,7 @@ const mockGetSession = auth.api.getSession as unknown as ReturnType<typeof vi.fn
 describe('joinRoom', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockGetSession.mockResolvedValue({ user: { id: 'user-1' } });
+    mockGetSession.mockResolvedValue({ user: { id: 'user-1', name: 'Test User' } });
   });
 
   it('returns unauthorized when no session', async () => {
@@ -114,5 +119,57 @@ describe('joinRoom', () => {
     expect(mockFindFirst).toHaveBeenCalledWith({
       where: { userId: 'user-1', bookId: 'book-1', leftAt: null },
     });
+  });
+
+  // --- Author join notification (Story 5.7) ---
+
+  it('triggers room:author-joined Pusher event when verified author joins', async () => {
+    mockFindFirst.mockResolvedValue(null);
+    mockClaimFindFirst.mockResolvedValue({ id: 'claim-1' });
+    mockCreate.mockResolvedValue({
+      id: 'presence-1',
+      userId: 'user-1',
+      bookId: 'book-1',
+      isAuthor: true,
+    });
+
+    await joinRoom('book-1');
+
+    expect(mockPusherTrigger).toHaveBeenCalledWith(
+      'presence-room-book-1',
+      'room:author-joined',
+      { authorId: 'user-1', authorName: 'Test User' }
+    );
+  });
+
+  it('does NOT trigger room:author-joined when non-author joins', async () => {
+    mockFindFirst.mockResolvedValue(null);
+    mockClaimFindFirst.mockResolvedValue(null);
+    mockCreate.mockResolvedValue({
+      id: 'presence-1',
+      userId: 'user-1',
+      bookId: 'book-1',
+      isAuthor: false,
+    });
+
+    await joinRoom('book-1');
+
+    expect(mockPusherTrigger).not.toHaveBeenCalled();
+  });
+
+  it('does not fail join when Pusher trigger fails (fire-and-forget)', async () => {
+    mockFindFirst.mockResolvedValue(null);
+    mockClaimFindFirst.mockResolvedValue({ id: 'claim-1' });
+    mockCreate.mockResolvedValue({
+      id: 'presence-1',
+      userId: 'user-1',
+      bookId: 'book-1',
+      isAuthor: true,
+    });
+    mockPusherTrigger.mockRejectedValue(new Error('Pusher unavailable'));
+
+    const result = await joinRoom('book-1');
+
+    expect(result.success).toBe(true);
   });
 });

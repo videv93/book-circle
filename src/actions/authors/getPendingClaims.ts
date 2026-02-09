@@ -36,7 +36,13 @@ export async function getPendingClaims(): Promise<
       return { success: false, error: 'Unauthorized' };
     }
 
-    if (!isAdmin(session.user.id)) {
+    // Fetch user with role for admin check
+    const adminUser = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { id: true, role: true },
+    });
+
+    if (!adminUser || !isAdmin(adminUser)) {
       return { success: false, error: 'Forbidden' };
     }
 

@@ -7,12 +7,16 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useSession } from '@/lib/auth-client';
 import { usePresenceChannel } from '@/hooks/usePresenceChannel';
+import type { AuthorJoinData } from '@/hooks/usePresenceChannel';
 import { useIdleTimeout } from '@/hooks/useIdleTimeout';
 import { usePresenceStore } from '@/stores/usePresenceStore';
 import { joinRoom, leaveRoom, getRoomMembers } from '@/actions/presence';
 import { updatePresenceHeartbeat } from '@/actions/presence/updatePresenceHeartbeat';
+import { getAuthorPresence } from '@/actions/authors/getAuthorPresence';
+import type { AuthorPresenceData } from '@/actions/authors/getAuthorPresence';
 import { PresenceAvatarStack } from './PresenceAvatarStack';
 import { OccupantDetailSheet } from './OccupantDetailSheet';
+import { AuthorShimmerBadge } from './AuthorShimmerBadge';
 
 interface ReadingRoomPanelProps {
   bookId: string;
@@ -26,12 +30,52 @@ export function ReadingRoomPanel({ bookId, className }: ReadingRoomPanelProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [showReturnMessage, setShowReturnMessage] = useState(false);
+  const [authorPresence, setAuthorPresence] = useState<AuthorPresenceData | null>(null);
+  const [authorAnnouncement, setAuthorAnnouncement] = useState('');
   const heartbeatRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const authorPresenceRef = useRef(authorPresence);
+  const connectionModeRef = useRef<string>('disconnected');
+  useEffect(() => {
+    authorPresenceRef.current = authorPresence;
+  });
+
+  const handleAuthorJoin = useCallback((data: AuthorJoinData) => {
+    setAuthorPresence({
+      isCurrentlyPresent: true,
+      authorName: data.authorName,
+      authorId: data.authorId,
+      lastSeenAt: new Date(),
+    });
+    // Only show toast in realtime mode (AC #3: polling users discover naturally)
+    if (connectionModeRef.current !== 'polling') {
+      setAuthorAnnouncement(`${data.authorName}, the author, has joined the reading room`);
+      toast(`✨ ${data.authorName} just joined the reading room!`, {
+        duration: 6000,
+        className: 'border-l-4 border-l-[var(--author-shimmer,#eab308)]',
+      });
+    }
+  }, []);
+
+  const handleAuthorLeave = useCallback((data: { authorId: string }) => {
+    setAuthorPresence({
+      isCurrentlyPresent: false,
+      authorName: authorPresenceRef.current?.authorName ?? 'The author',
+      authorId: data.authorId,
+      lastSeenAt: new Date(),
+    });
+    setAuthorAnnouncement('');
+  }, []);
 
   const { members, connectionMode, memberCount } = usePresenceChannel({
     channelId: isJoined ? bookId : null,
     enabled: isJoined,
+    onAuthorJoin: handleAuthorJoin,
+    onAuthorLeave: handleAuthorLeave,
   });
+
+  useEffect(() => {
+    connectionModeRef.current = connectionMode;
+  }, [connectionMode]);
 
   // Guard against stale cross-book data in the global presence store
   const expectedChannel = `presence-room-${bookId}`;
@@ -103,6 +147,15 @@ export function ReadingRoomPanel({ bookId, className }: ReadingRoomPanelProps) {
     }).catch(() => {});
   }, [bookId, userId]);
 
+  // Fetch author presence on mount
+  useEffect(() => {
+    getAuthorPresence(bookId).then((result) => {
+      if (result.success) {
+        setAuthorPresence(result.data);
+      }
+    }).catch(() => {});
+  }, [bookId]);
+
   // Close sheet when member count drops to sole reader
   useEffect(() => {
     if (safeMemberCount <= 1) {
@@ -171,12 +224,18 @@ export function ReadingRoomPanel({ bookId, className }: ReadingRoomPanelProps) {
     }
   };
 
+  // Derive author-in-room from live members or server data
+  const authorInRoom = authorPresence?.isCurrentlyPresent || Array.from(safeMembers.values()).some((m) => m.isAuthor);
+
   // Not joined state (preview)
   if (!isJoined) {
     return (
       <div
         className={cn(
-          'rounded-lg border border-amber-200 bg-amber-50/50 p-3',
+          'rounded-lg border bg-amber-50/50 p-3',
+          authorInRoom
+            ? 'border-[var(--author-shimmer,#eab308)] shadow-[0_0_12px_var(--author-shimmer,#eab308)]'
+            : 'border-amber-200',
           className
         )}
         data-testid="reading-room-panel"
@@ -199,7 +258,26 @@ export function ReadingRoomPanel({ bookId, className }: ReadingRoomPanelProps) {
             {isLoading ? 'Joining...' : 'Join Room'}
           </Button>
         </div>
-        {showReturnMessage && (
+        {authorInRoom && (
+          <p
+            className="text-sm font-medium text-amber-700 mt-2"
+            data-testid="author-here-indicator"
+            aria-live="polite"
+          >
+            Author is here!
+          </p>
+        )}
+        {!authorInRoom && authorPresence && (
+          <div className="mt-2">
+            <AuthorShimmerBadge
+              authorName={authorPresence.authorName}
+              lastSeenAt={authorPresence.lastSeenAt!}
+              isLive={false}
+              authorId={authorPresence.authorId}
+            />
+          </div>
+        )}
+        {showReturnMessage && !authorPresence && (
           <p
             className="text-sm text-amber-600 italic mt-2"
             data-testid="return-message"
@@ -218,7 +296,10 @@ export function ReadingRoomPanel({ bookId, className }: ReadingRoomPanelProps) {
   return (
     <div
       className={cn(
-        'rounded-lg border border-amber-200 bg-amber-50/50 p-3 space-y-2',
+        'rounded-lg border bg-amber-50/50 p-3 space-y-2',
+        authorInRoom
+          ? 'border-[var(--author-shimmer,#eab308)] shadow-[0_0_12px_var(--author-shimmer,#eab308)]'
+          : 'border-amber-200',
         className
       )}
       data-testid="reading-room-panel"
@@ -244,6 +325,16 @@ export function ReadingRoomPanel({ bookId, className }: ReadingRoomPanelProps) {
         </Button>
       </div>
 
+      {authorInRoom && (
+        <p
+          className="text-sm font-medium text-amber-700"
+          data-testid="author-here-indicator"
+          aria-live="polite"
+        >
+          Author is here!
+        </p>
+      )}
+
       {isSoleReader ? (
         <p
           className="text-sm text-amber-600 italic"
@@ -264,6 +355,17 @@ export function ReadingRoomPanel({ bookId, className }: ReadingRoomPanelProps) {
         </div>
       )}
 
+      {!authorInRoom && authorPresence && (
+        <div className="mt-1">
+          <AuthorShimmerBadge
+            authorName={authorPresence.authorName}
+            lastSeenAt={authorPresence.lastSeenAt!}
+            isLive={false}
+            authorId={authorPresence.authorId}
+          />
+        </div>
+      )}
+
       {showSheet && (
         <OccupantDetailSheet
           open={isSheetOpen}
@@ -271,6 +373,15 @@ export function ReadingRoomPanel({ bookId, className }: ReadingRoomPanelProps) {
           members={safeMembers}
         />
       )}
+
+      {/* Screen reader announcement for author join events */}
+      <span
+        className="sr-only"
+        aria-live="polite"
+        data-testid="author-join-announcement"
+      >
+        {authorAnnouncement}
+      </span>
     </div>
   );
 }

@@ -6,9 +6,14 @@ import { usePresenceStore, type PresenceMember } from '@/stores/usePresenceStore
 import { getRoomMembers } from '@/actions/presence/getRoomMembers';
 
 interface PresenceEvent {
-  type: 'subscription_succeeded' | 'member_added' | 'member_removed' | 'subscription_error' | 'polling_fallback' | 'poll_update';
+  type: 'subscription_succeeded' | 'member_added' | 'member_removed' | 'subscription_error' | 'polling_fallback' | 'poll_update' | 'author_joined' | 'author_left';
   detail: string;
   memberId?: string;
+}
+
+interface AuthorJoinData {
+  authorId: string;
+  authorName: string;
 }
 
 interface UsePresenceChannelOptions {
@@ -16,6 +21,8 @@ interface UsePresenceChannelOptions {
   enabled?: boolean;
   pollingIntervalMs?: number;
   onEvent?: (event: PresenceEvent) => void;
+  onAuthorJoin?: (data: AuthorJoinData) => void;
+  onAuthorLeave?: (data: { authorId: string }) => void;
 }
 
 export function usePresenceChannel({
@@ -23,15 +30,21 @@ export function usePresenceChannel({
   enabled = true,
   pollingIntervalMs = 30000,
   onEvent,
+  onAuthorJoin,
+  onAuthorLeave,
 }: UsePresenceChannelOptions) {
   const channelRef = useRef<ReturnType<
     NonNullable<ReturnType<typeof getPusherClient>>['subscribe']
   > | null>(null);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const onEventRef = useRef(onEvent);
+  const onAuthorJoinRef = useRef(onAuthorJoin);
+  const onAuthorLeaveRef = useRef(onAuthorLeave);
 
   useEffect(() => {
     onEventRef.current = onEvent;
+    onAuthorJoinRef.current = onAuthorJoin;
+    onAuthorLeaveRef.current = onAuthorLeave;
   });
 
   const {
@@ -56,7 +69,7 @@ export function usePresenceChannel({
         if (result.success) {
           const memberMap = new Map<string, PresenceMember>();
           for (const m of result.data) {
-            memberMap.set(m.id, m);
+            memberMap.set(m.id, { id: m.id, name: m.name, avatarUrl: m.avatarUrl, isAuthor: m.isAuthor });
           }
           setMembers(memberMap);
           onEventRef.current?.({ type: 'poll_update', detail: `Polled ${result.data.length} members` });
@@ -100,10 +113,10 @@ export function usePresenceChannel({
 
       channel.bind(
         'pusher:subscription_succeeded',
-        (data: { members: Record<string, { name: string; avatarUrl: string | null }> }) => {
+        (data: { members: Record<string, { name: string; avatarUrl: string | null; isAuthor?: boolean }> }) => {
           const memberMap = new Map<string, PresenceMember>();
           for (const [id, info] of Object.entries(data.members)) {
-            memberMap.set(id, { id, name: info.name, avatarUrl: info.avatarUrl });
+            memberMap.set(id, { id, name: info.name, avatarUrl: info.avatarUrl, isAuthor: info.isAuthor ?? false });
           }
           setMembers(memberMap);
           setConnectionMode('realtime');
@@ -116,8 +129,8 @@ export function usePresenceChannel({
 
       channel.bind(
         'pusher:member_added',
-        (member: { id: string; info: { name: string; avatarUrl: string | null } }) => {
-          addMember({ id: member.id, name: member.info.name, avatarUrl: member.info.avatarUrl });
+        (member: { id: string; info: { name: string; avatarUrl: string | null; isAuthor?: boolean } }) => {
+          addMember({ id: member.id, name: member.info.name, avatarUrl: member.info.avatarUrl, isAuthor: member.info.isAuthor ?? false });
           onEventRef.current?.({
             type: 'member_added',
             detail: `${member.info.name} joined`,
@@ -127,12 +140,31 @@ export function usePresenceChannel({
       );
 
       channel.bind('pusher:member_removed', (member: { id: string }) => {
+        // Check if the leaving member is an author before removing
+        const leavingMember = usePresenceStore.getState().members.get(member.id);
         removeMember(member.id);
         onEventRef.current?.({
           type: 'member_removed',
           detail: `Member ${member.id} left`,
           memberId: member.id,
         });
+        if (leavingMember?.isAuthor) {
+          onEventRef.current?.({
+            type: 'author_left',
+            detail: `Author ${member.id} left`,
+            memberId: member.id,
+          });
+          onAuthorLeaveRef.current?.({ authorId: member.id });
+        }
+      });
+
+      channel.bind('room:author-joined', (data: AuthorJoinData) => {
+        onEventRef.current?.({
+          type: 'author_joined',
+          detail: `${data.authorName} joined as author`,
+          memberId: data.authorId,
+        });
+        onAuthorJoinRef.current?.(data);
       });
 
       channel.bind('pusher:subscription_error', () => {
@@ -177,4 +209,4 @@ export function usePresenceChannel({
   };
 }
 
-export type { PresenceEvent };
+export type { PresenceEvent, AuthorJoinData };

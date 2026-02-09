@@ -6,3 +6,5 @@ export { getBookEngagement } from './getBookEngagement';
 export type { ClaimStatusData } from './getClaimStatus';
 export type { PendingClaimData } from './getPendingClaims';
 export type { BookEngagementData } from './getBookEngagement';
+export { getAuthorPresence } from './getAuthorPresence';
+export type { AuthorPresenceData } from './getAuthorPresence';

@@ -76,6 +76,7 @@ describe('ProfileView', () => {
     favoriteGenres: ['Fiction', 'Mystery'],
     showReadingActivity: true,
     dailyGoalMinutes: null,
+    role: 'USER',
     lastActivityViewedAt: null,
     createdAt: new Date('2024-01-15'),
     updatedAt: new Date('2024-01-15'),
@@ -215,5 +216,27 @@ describe('ProfileView', () => {
 
     expect(screen.getByTestId('reading-goal-section')).toBeInTheDocument();
     expect(screen.getByText('No goal set')).toBeInTheDocument();
+  });
+
+  it('does not show admin link for regular users', () => {
+    render(<ProfileView user={mockUser} />);
+
+    expect(screen.queryByText('Admin')).not.toBeInTheDocument();
+  });
+
+  it('shows admin link for admin users', () => {
+    const adminUser = { ...mockUser, role: 'ADMIN' as const };
+    render(<ProfileView user={adminUser} />);
+
+    const adminLink = screen.getByText('Admin');
+    expect(adminLink).toBeInTheDocument();
+    expect(adminLink.closest('a')).toHaveAttribute('href', '/admin');
+  });
+
+  it('shows admin link for super-admin users', () => {
+    const superAdminUser = { ...mockUser, role: 'SUPER_ADMIN' as const };
+    render(<ProfileView user={superAdminUser} />);
+
+    expect(screen.getByText('Admin')).toBeInTheDocument();
   });
 });

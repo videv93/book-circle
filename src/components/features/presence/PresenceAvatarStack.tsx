@@ -28,13 +28,28 @@ export function PresenceAvatarStack({
 }: PresenceAvatarStackProps) {
   const shouldReduceMotion = useReducedMotion();
   const memberList = Array.from(members.values());
-  const visible = memberList.slice(0, maxVisible);
-  const overflow = memberList.length - maxVisible;
-  const count = memberList.length;
+
+  // Sort author to first position
+  const sorted = [...memberList].sort((a, b) => {
+    if (a.isAuthor && !b.isAuthor) return -1;
+    if (!a.isAuthor && b.isAuthor) return 1;
+    return 0;
+  });
+
+  const visible = sorted.slice(0, maxVisible);
+  const overflow = sorted.length - maxVisible;
+  const count = sorted.length;
+  const hasAuthor = sorted.some((m) => m.isAuthor);
 
   if (count === 0) return null;
 
-  const readerLabel = count === 1 ? '1 reader in room' : `${count} readers in room`;
+  const readerLabel = hasAuthor
+    ? count === 1
+      ? '1 reader in room including the author'
+      : `${count} readers in room including the author`
+    : count === 1
+      ? '1 reader in room'
+      : `${count} readers in room`;
 
   const isClickable = !!onClick;
 
@@ -85,7 +100,12 @@ export function PresenceAvatarStack({
                       delay: index * 0.5,
                     }
               }
-              className="relative rounded-full border-2 border-white bg-amber-100 flex items-center justify-center overflow-hidden"
+              className={cn(
+                'relative rounded-full border-2 bg-amber-100 flex items-center justify-center overflow-hidden',
+                member.isAuthor
+                  ? 'border-[var(--author-shimmer,#eab308)] ring-2 ring-[var(--author-shimmer,#eab308)] motion-safe:animate-pulse'
+                  : 'border-white'
+              )}
               style={{
                 width: size,
                 height: size,

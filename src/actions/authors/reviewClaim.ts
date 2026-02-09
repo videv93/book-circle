@@ -21,7 +21,13 @@ export async function reviewClaim(
       return { success: false, error: 'Unauthorized' };
     }
 
-    if (!isAdmin(session.user.id)) {
+    // Fetch user with role for admin check
+    const adminUser = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { id: true, role: true },
+    });
+
+    if (!adminUser || !isAdmin(adminUser)) {
       return { success: false, error: 'Forbidden' };
     }
 
@@ -40,14 +46,29 @@ export async function reviewClaim(
 
     const newStatus = validated.decision === 'approve' ? 'APPROVED' : 'REJECTED';
 
-    const updatedClaim = await prisma.authorClaim.update({
-      where: { id: validated.claimId },
-      data: {
-        status: newStatus,
-        reviewedById: session.user.id,
-        reviewedAt: new Date(),
-      },
-    });
+    const [updatedClaim] = await prisma.$transaction([
+      prisma.authorClaim.update({
+        where: { id: validated.claimId },
+        data: {
+          status: newStatus,
+          reviewedById: session.user.id,
+          reviewedAt: new Date(),
+        },
+      }),
+      prisma.adminAction.create({
+        data: {
+          adminId: session.user.id,
+          actionType: 'REVIEW_CLAIM',
+          targetId: validated.claimId,
+          targetType: 'AuthorClaim',
+          details: {
+            decision: validated.decision,
+            bookTitle: claim.book.title,
+            claimUserId: claim.userId,
+          },
+        },
+      }),
+    ]);
 
     // Send real-time notification to the claimant
     const eventName =

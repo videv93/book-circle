@@ -207,6 +207,114 @@ describe('usePresenceChannel', () => {
     );
   });
 
+  // --- Author join/leave events (Story 5.7) ---
+
+  it('calls onAuthorJoin callback when room:author-joined fires', () => {
+    const mockChannel = createMockChannel();
+    mockSubscribe.mockReturnValue(mockChannel);
+    const onAuthorJoin = vi.fn();
+
+    renderHook(() => usePresenceChannel({ channelId: 'book-1', onAuthorJoin }));
+
+    act(() => {
+      mockChannel.trigger('room:author-joined', { authorId: 'author-1', authorName: 'Jane Author' });
+    });
+
+    expect(onAuthorJoin).toHaveBeenCalledWith({ authorId: 'author-1', authorName: 'Jane Author' });
+  });
+
+  it('emits author_joined PresenceEvent when room:author-joined fires', () => {
+    const mockChannel = createMockChannel();
+    mockSubscribe.mockReturnValue(mockChannel);
+    const onEvent = vi.fn();
+
+    renderHook(() => usePresenceChannel({ channelId: 'book-1', onEvent }));
+
+    act(() => {
+      mockChannel.trigger('room:author-joined', { authorId: 'author-1', authorName: 'Jane Author' });
+    });
+
+    expect(onEvent).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'author_joined', memberId: 'author-1' })
+    );
+  });
+
+  it('calls onAuthorLeave when an author member is removed', () => {
+    const mockChannel = createMockChannel();
+    mockSubscribe.mockReturnValue(mockChannel);
+    const onAuthorLeave = vi.fn();
+
+    renderHook(() => usePresenceChannel({ channelId: 'book-1', onAuthorLeave }));
+
+    // First add an author member
+    act(() => {
+      mockChannel.trigger('pusher:subscription_succeeded', {
+        members: {
+          'author-1': { name: 'Jane Author', avatarUrl: null, isAuthor: true },
+        },
+      });
+    });
+
+    // Then remove them
+    act(() => {
+      mockChannel.trigger('pusher:member_removed', { id: 'author-1' });
+    });
+
+    expect(onAuthorLeave).toHaveBeenCalledWith({ authorId: 'author-1' });
+  });
+
+  it('does not call onAuthorLeave when a non-author member is removed', () => {
+    const mockChannel = createMockChannel();
+    mockSubscribe.mockReturnValue(mockChannel);
+    const onAuthorLeave = vi.fn();
+
+    renderHook(() => usePresenceChannel({ channelId: 'book-1', onAuthorLeave }));
+
+    // Add a regular member
+    act(() => {
+      mockChannel.trigger('pusher:subscription_succeeded', {
+        members: {
+          'user-1': { name: 'Alice', avatarUrl: null, isAuthor: false },
+        },
+      });
+    });
+
+    // Remove them
+    act(() => {
+      mockChannel.trigger('pusher:member_removed', { id: 'user-1' });
+    });
+
+    expect(onAuthorLeave).not.toHaveBeenCalled();
+  });
+
+  it('emits author_left PresenceEvent when author member is removed', () => {
+    const mockChannel = createMockChannel();
+    mockSubscribe.mockReturnValue(mockChannel);
+    const onEvent = vi.fn();
+
+    renderHook(() => usePresenceChannel({ channelId: 'book-1', onEvent }));
+
+    // Add an author member
+    act(() => {
+      mockChannel.trigger('pusher:subscription_succeeded', {
+        members: {
+          'author-1': { name: 'Jane Author', avatarUrl: null, isAuthor: true },
+        },
+      });
+    });
+
+    onEvent.mockClear();
+
+    // Remove the author
+    act(() => {
+      mockChannel.trigger('pusher:member_removed', { id: 'author-1' });
+    });
+
+    expect(onEvent).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'author_left', memberId: 'author-1' })
+    );
+  });
+
   it('cleans up subscription on unmount', () => {
     const mockChannel = createMockChannel();
     mockSubscribe.mockReturnValue(mockChannel);

@@ -10,6 +10,9 @@ import { ClaimStatusBadge } from '@/components/features/authors/ClaimStatusBadge
 import { AuthorClaimForm } from '@/components/features/authors/AuthorClaimForm';
 import { getClaimStatus } from '@/actions/authors/getClaimStatus';
 import type { ClaimStatusData } from '@/actions/authors/getClaimStatus';
+import { getAuthorPresence } from '@/actions/authors/getAuthorPresence';
+import type { AuthorPresenceData } from '@/actions/authors/getAuthorPresence';
+import { AuthorShimmerBadge } from '@/components/features/presence/AuthorShimmerBadge';
 
 interface BookDetailHeroProps {
   book: BookData;
@@ -24,6 +27,7 @@ export function BookDetailHero({
 }: BookDetailHeroProps) {
   const [claimFormOpen, setClaimFormOpen] = useState(false);
   const [claimStatus, setClaimStatus] = useState<ClaimStatusData | null>(null);
+  const [authorPresence, setAuthorPresence] = useState<AuthorPresenceData | null>(null);
 
   const isExternal = 'isExternal' in book && book.isExternal;
 
@@ -35,6 +39,12 @@ export function BookDetailHero({
         setClaimStatus(result.data);
       }
     });
+
+    getAuthorPresence(book.id).then((result) => {
+      if (result.success) {
+        setAuthorPresence(result.data);
+      }
+    }).catch(() => {});
   }, [book.id, isExternal]);
 
   const handleClaimSuccess = () => {
@@ -100,6 +110,18 @@ export function BookDetailHero({
                 Are you the author?
               </button>
             ) : null}
+          </div>
+        )}
+
+        {/* Author presence badge */}
+        {authorPresence && authorPresence.lastSeenAt && (
+          <div className="mt-2" data-testid="author-presence-section">
+            <AuthorShimmerBadge
+              authorName={authorPresence.authorName}
+              lastSeenAt={authorPresence.lastSeenAt}
+              isLive={authorPresence.isCurrentlyPresent}
+              authorId={authorPresence.authorId}
+            />
           </div>
         )}
 

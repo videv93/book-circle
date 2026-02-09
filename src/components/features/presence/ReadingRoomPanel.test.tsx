@@ -25,17 +25,21 @@ vi.mock('framer-motion', () => ({
   useReducedMotion: () => false,
 }));
 
-// Mock sonner
-vi.mock('sonner', () => ({
-  toast: {
-    error: vi.fn(),
-    success: vi.fn(),
-    info: vi.fn(),
-  },
-}));
+// Mock sonner - toast is a callable function AND has method properties
+vi.mock('sonner', () => {
+  const fn = vi.fn() as ReturnType<typeof vi.fn> & {
+    error: ReturnType<typeof vi.fn>;
+    success: ReturnType<typeof vi.fn>;
+    info: ReturnType<typeof vi.fn>;
+  };
+  fn.error = vi.fn();
+  fn.success = vi.fn();
+  fn.info = vi.fn();
+  return { toast: fn };
+});
 
 import { toast } from 'sonner';
-const mockToast = toast as unknown as {
+const mockToast = toast as unknown as ReturnType<typeof vi.fn> & {
   error: ReturnType<typeof vi.fn>;
   success: ReturnType<typeof vi.fn>;
   info: ReturnType<typeof vi.fn>;
@@ -54,10 +58,17 @@ vi.mock('@/stores/usePresenceStore', () => ({
     mockUsePresenceStore(selector),
 }));
 
-// Mock the usePresenceChannel hook
+// Mock the usePresenceChannel hook — capture callbacks for testing
+let capturedOnAuthorJoin: ((data: { authorId: string; authorName: string }) => void) | undefined;
+let capturedOnAuthorLeave: ((data: { authorId: string }) => void) | undefined;
 const mockUsePresenceChannel = vi.fn();
 vi.mock('@/hooks/usePresenceChannel', () => ({
-  usePresenceChannel: (...args: unknown[]) => mockUsePresenceChannel(...args),
+  usePresenceChannel: (...args: unknown[]) => {
+    const opts = args[0] as Record<string, unknown> | undefined;
+    capturedOnAuthorJoin = opts?.onAuthorJoin as typeof capturedOnAuthorJoin;
+    capturedOnAuthorLeave = opts?.onAuthorLeave as typeof capturedOnAuthorLeave;
+    return mockUsePresenceChannel(...args);
+  },
 }));
 
 // Mock useIdleTimeout hook - capture callback to simulate idle timeout in tests
@@ -85,6 +96,11 @@ vi.mock('@/actions/presence', () => ({
 const mockUpdateHeartbeat = vi.fn();
 vi.mock('@/actions/presence/updatePresenceHeartbeat', () => ({
   updatePresenceHeartbeat: (...args: unknown[]) => mockUpdateHeartbeat(...args),
+}));
+
+const mockGetAuthorPresence = vi.fn();
+vi.mock('@/actions/authors/getAuthorPresence', () => ({
+  getAuthorPresence: (...args: unknown[]) => mockGetAuthorPresence(...args),
 }));
 
 // Mock next/link (needed by OccupantDetailSheet)
@@ -207,6 +223,7 @@ describe('ReadingRoomPanel', () => {
     mockLeaveRoom.mockResolvedValue({ success: true, data: { leftAt: new Date() } });
     mockUpdateHeartbeat.mockResolvedValue({ success: true, data: { updated: true } });
     mockGetRoomMembers.mockResolvedValue({ success: true, data: [] });
+    mockGetAuthorPresence.mockResolvedValue({ success: true, data: null });
   });
 
   // --- Preview (not joined) state ---
@@ -227,10 +244,12 @@ describe('ReadingRoomPanel', () => {
 
   it('does not call usePresenceChannel when not joined', () => {
     render(<ReadingRoomPanel bookId="book-1" />);
-    expect(mockUsePresenceChannel).toHaveBeenCalledWith({
-      channelId: null,
-      enabled: false,
-    });
+    expect(mockUsePresenceChannel).toHaveBeenCalledWith(
+      expect.objectContaining({
+        channelId: null,
+        enabled: false,
+      })
+    );
   });
 
   // --- Join action ---
@@ -581,5 +600,275 @@ describe('ReadingRoomPanel', () => {
   it('does not show return message on initial render', () => {
     render(<ReadingRoomPanel bookId="book-1" />);
     expect(screen.queryByTestId('return-message')).toBeNull();
+  });
+
+  // --- Author presence (Story 5.6) ---
+
+  it('shows "Author is here!" when author is currently present in room', async () => {
+    mockGetAuthorPresence.mockResolvedValue({
+      success: true,
+      data: {
+        isCurrentlyPresent: true,
+        lastSeenAt: new Date(),
+        authorName: 'Jane Author',
+        authorId: 'author-1',
+      },
+    });
+    render(<ReadingRoomPanel bookId="book-1" />);
+    await waitFor(() => {
+      expect(screen.getByTestId('author-here-indicator')).toHaveTextContent('Author is here!');
+    });
+  });
+
+  it('shows golden border glow when author is present (preview state)', async () => {
+    mockGetAuthorPresence.mockResolvedValue({
+      success: true,
+      data: {
+        isCurrentlyPresent: true,
+        lastSeenAt: new Date(),
+        authorName: 'Jane Author',
+        authorId: 'author-1',
+      },
+    });
+    render(<ReadingRoomPanel bookId="book-1" />);
+    await waitFor(() => {
+      const panel = screen.getByTestId('reading-room-panel');
+      expect(panel.className).toContain('border-[var(--author-shimmer,#eab308)]');
+      expect(panel.className).toContain('shadow-[0_0_12px_var(--author-shimmer,#eab308)]');
+    });
+  });
+
+  it('shows AuthorShimmerBadge when author was here recently but not currently present', async () => {
+    mockGetAuthorPresence.mockResolvedValue({
+      success: true,
+      data: {
+        isCurrentlyPresent: false,
+        lastSeenAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
+        authorName: 'Jane Author',
+        authorId: 'author-1',
+      },
+    });
+    render(<ReadingRoomPanel bookId="book-1" />);
+    await waitFor(() => {
+      expect(screen.getByTestId('author-shimmer-badge')).toBeInTheDocument();
+      expect(screen.getByTestId('author-shimmer-text')).toHaveTextContent(/Author was here/);
+    });
+  });
+
+  it('does not show author indicators when no author presence data', () => {
+    mockGetAuthorPresence.mockResolvedValue({ success: true, data: null });
+    render(<ReadingRoomPanel bookId="book-1" />);
+    expect(screen.queryByTestId('author-here-indicator')).toBeNull();
+  });
+
+  it('fetches author presence on mount', () => {
+    render(<ReadingRoomPanel bookId="book-1" />);
+    expect(mockGetAuthorPresence).toHaveBeenCalledWith('book-1');
+  });
+
+  it('shows "Author is here!" in joined state when author is a live member', async () => {
+    const user = userEvent.setup();
+    const membersWithAuthor = new Map<string, PresenceMember>();
+    membersWithAuthor.set('user-1', { id: 'user-1', name: 'Reader', avatarUrl: null });
+    membersWithAuthor.set('author-1', { id: 'author-1', name: 'Jane Author', avatarUrl: null, isAuthor: true });
+    mockUsePresenceChannel.mockReturnValue({
+      members: membersWithAuthor,
+      currentChannel: 'presence-room-book-1',
+      isConnected: true,
+      connectionMode: 'realtime',
+      memberCount: 2,
+    });
+    render(<ReadingRoomPanel bookId="book-1" />);
+    await user.click(screen.getByTestId('join-room-button'));
+    await waitFor(() => {
+      expect(screen.getByTestId('author-here-indicator')).toHaveTextContent('Author is here!');
+    });
+  });
+
+  // --- Author join notification (Story 5.7) ---
+
+  it('shows golden toast when onAuthorJoin fires in realtime mode', async () => {
+    const user = userEvent.setup();
+    mockUsePresenceChannel.mockReturnValue({
+      members: createMemberMap(2),
+      currentChannel: 'presence-room-book-1',
+      isConnected: true,
+      connectionMode: 'realtime',
+      memberCount: 2,
+    });
+    render(<ReadingRoomPanel bookId="book-1" />);
+    await user.click(screen.getByTestId('join-room-button'));
+    await waitFor(() => {
+      expect(screen.getByTestId('leave-room-button')).toBeInTheDocument();
+    });
+
+    // Simulate the author join event
+    act(() => {
+      capturedOnAuthorJoin?.({ authorId: 'author-1', authorName: 'Jane Author' });
+    });
+
+    expect(mockToast).toHaveBeenCalledWith(
+      '✨ Jane Author just joined the reading room!',
+      expect.objectContaining({
+        duration: 6000,
+        className: 'border-l-4 border-l-[var(--author-shimmer,#eab308)]',
+      })
+    );
+  });
+
+  it('updates authorPresence state when onAuthorJoin fires', async () => {
+    const user = userEvent.setup();
+    mockUsePresenceChannel.mockReturnValue({
+      members: createMemberMap(2),
+      currentChannel: 'presence-room-book-1',
+      isConnected: true,
+      connectionMode: 'realtime',
+      memberCount: 2,
+    });
+    render(<ReadingRoomPanel bookId="book-1" />);
+    await user.click(screen.getByTestId('join-room-button'));
+    await waitFor(() => {
+      expect(screen.getByTestId('leave-room-button')).toBeInTheDocument();
+    });
+
+    act(() => {
+      capturedOnAuthorJoin?.({ authorId: 'author-1', authorName: 'Jane Author' });
+    });
+
+    await waitFor(() => {
+      expect(screen.getByTestId('author-here-indicator')).toHaveTextContent('Author is here!');
+    });
+  });
+
+  it('does NOT show toast in polling mode when onAuthorJoin fires', async () => {
+    const user = userEvent.setup();
+    mockUsePresenceChannel.mockReturnValue({
+      members: createMemberMap(2),
+      currentChannel: 'presence-room-book-1',
+      isConnected: true,
+      connectionMode: 'polling',
+      memberCount: 2,
+    });
+    render(<ReadingRoomPanel bookId="book-1" />);
+    await user.click(screen.getByTestId('join-room-button'));
+    await waitFor(() => {
+      expect(screen.getByTestId('leave-room-button')).toBeInTheDocument();
+    });
+
+    mockToast.mockClear();
+
+    act(() => {
+      capturedOnAuthorJoin?.({ authorId: 'author-1', authorName: 'Jane Author' });
+    });
+
+    // toast() should NOT have been called (but toast.error etc. may have been called earlier)
+    expect(mockToast).not.toHaveBeenCalled();
+  });
+
+  it('does NOT show toast when onAuthorLeave fires', async () => {
+    const user = userEvent.setup();
+    mockUsePresenceChannel.mockReturnValue({
+      members: createMemberMap(2),
+      currentChannel: 'presence-room-book-1',
+      isConnected: true,
+      connectionMode: 'realtime',
+      memberCount: 2,
+    });
+    mockGetAuthorPresence.mockResolvedValue({
+      success: true,
+      data: {
+        isCurrentlyPresent: true,
+        lastSeenAt: new Date(),
+        authorName: 'Jane Author',
+        authorId: 'author-1',
+      },
+    });
+    render(<ReadingRoomPanel bookId="book-1" />);
+    await user.click(screen.getByTestId('join-room-button'));
+    await waitFor(() => {
+      expect(screen.getByTestId('leave-room-button')).toBeInTheDocument();
+    });
+
+    mockToast.mockClear();
+    mockToast.error.mockClear();
+    mockToast.info.mockClear();
+
+    act(() => {
+      capturedOnAuthorLeave?.({ authorId: 'author-1' });
+    });
+
+    expect(mockToast).not.toHaveBeenCalled();
+  });
+
+  it('updates authorPresence to "was here" state when onAuthorLeave fires', async () => {
+    const user = userEvent.setup();
+    mockUsePresenceChannel.mockReturnValue({
+      members: createMemberMap(2),
+      currentChannel: 'presence-room-book-1',
+      isConnected: true,
+      connectionMode: 'realtime',
+      memberCount: 2,
+    });
+    render(<ReadingRoomPanel bookId="book-1" />);
+    await user.click(screen.getByTestId('join-room-button'));
+    await waitFor(() => {
+      expect(screen.getByTestId('leave-room-button')).toBeInTheDocument();
+    });
+
+    // First simulate author joining
+    act(() => {
+      capturedOnAuthorJoin?.({ authorId: 'author-1', authorName: 'Jane Author' });
+    });
+
+    await waitFor(() => {
+      expect(screen.getByTestId('author-here-indicator')).toBeInTheDocument();
+    });
+
+    // Then author leaves
+    act(() => {
+      capturedOnAuthorLeave?.({ authorId: 'author-1' });
+    });
+
+    await waitFor(() => {
+      // Author is no longer "here", should show shimmer badge instead
+      expect(screen.queryByTestId('author-here-indicator')).toBeNull();
+      expect(screen.getByTestId('author-shimmer-badge')).toBeInTheDocument();
+    });
+  });
+
+  it('renders aria-live announcement when author joins', async () => {
+    const user = userEvent.setup();
+    mockUsePresenceChannel.mockReturnValue({
+      members: createMemberMap(2),
+      currentChannel: 'presence-room-book-1',
+      isConnected: true,
+      connectionMode: 'realtime',
+      memberCount: 2,
+    });
+    render(<ReadingRoomPanel bookId="book-1" />);
+    await user.click(screen.getByTestId('join-room-button'));
+    await waitFor(() => {
+      expect(screen.getByTestId('leave-room-button')).toBeInTheDocument();
+    });
+
+    act(() => {
+      capturedOnAuthorJoin?.({ authorId: 'author-1', authorName: 'Jane Author' });
+    });
+
+    await waitFor(() => {
+      const announcement = screen.getByTestId('author-join-announcement');
+      expect(announcement).toHaveTextContent('Jane Author, the author, has joined the reading room');
+      expect(announcement).toHaveAttribute('aria-live', 'polite');
+    });
+  });
+
+  it('passes onAuthorJoin and onAuthorLeave to usePresenceChannel', async () => {
+    const user = userEvent.setup();
+    render(<ReadingRoomPanel bookId="book-1" />);
+    await user.click(screen.getByTestId('join-room-button'));
+    await waitFor(() => {
+      expect(capturedOnAuthorJoin).toBeDefined();
+      expect(capturedOnAuthorLeave).toBeDefined();
+    });
   });
 });

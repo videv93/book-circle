@@ -73,6 +73,11 @@ vi.mock('@/actions/presence/updatePresenceHeartbeat', () => ({
   updatePresenceHeartbeat: vi.fn().mockResolvedValue({ success: true, data: { updated: true } }),
 }));
 
+// Mock getAuthorPresence (used by ReadingRoomPanel)
+vi.mock('@/actions/authors/getAuthorPresence', () => ({
+  getAuthorPresence: vi.fn().mockResolvedValue({ success: true, data: null }),
+}));
+
 // Mock usePresenceChannel hook (used by ReadingRoomPanel)
 vi.mock('@/hooks/usePresenceChannel', () => ({
   usePresenceChannel: vi.fn().mockReturnValue({

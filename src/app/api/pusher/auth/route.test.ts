@@ -18,6 +18,17 @@ vi.mock('@/lib/pusher-server', () => ({
   getPusher: vi.fn(),
 }));
 
+const mockPrismaAuthorClaim = {
+  findFirst: vi.fn().mockResolvedValue(null),
+};
+vi.mock('@/lib/prisma', () => ({
+  prisma: {
+    authorClaim: {
+      get findFirst() { return mockPrismaAuthorClaim.findFirst; },
+    },
+  },
+}));
+
 import { auth } from '@/lib/auth';
 import { getPusher } from '@/lib/pusher-server';
 
@@ -37,6 +48,7 @@ function createRequest(socketId: string, channelName: string): NextRequest {
 describe('POST /api/pusher/auth', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockPrismaAuthorClaim.findFirst.mockResolvedValue(null);
   });
 
   it('returns 403 when user is not authenticated', async () => {
@@ -176,6 +188,7 @@ describe('POST /api/pusher/auth', () => {
           user_info: {
             name: 'Test User',
             avatarUrl: 'https://example.com/avatar.jpg',
+            isAuthor: false,
           },
         }
       );
@@ -201,6 +214,7 @@ describe('POST /api/pusher/auth', () => {
           user_info: {
             name: 'Test User',
             avatarUrl: null,
+            isAuthor: false,
           },
         }
       );
@@ -251,6 +265,38 @@ describe('POST /api/pusher/auth', () => {
           user_info: {
             name: 'Anonymous',
             avatarUrl: null,
+            isAuthor: false,
+          },
+        }
+      );
+    });
+
+    it('sets isAuthor to true when user has approved author claim', async () => {
+      mockGetSession.mockResolvedValue({
+        user: { id: 'author-1', name: 'Author Name', image: null },
+      });
+      mockPrismaAuthorClaim.findFirst.mockResolvedValue({ id: 'claim-1' });
+      const mockPusher = {
+        authorizeChannel: vi.fn().mockReturnValue({ auth: 'token' }),
+      };
+      mockGetPusher.mockReturnValue(mockPusher);
+
+      const request = createRequest('socket-1', 'presence-room-book-123');
+      await POST(request);
+
+      expect(mockPrismaAuthorClaim.findFirst).toHaveBeenCalledWith({
+        where: { bookId: 'book-123', userId: 'author-1', status: 'APPROVED' },
+        select: { id: true },
+      });
+      expect(mockPusher.authorizeChannel).toHaveBeenCalledWith(
+        'socket-1',
+        'presence-room-book-123',
+        {
+          user_id: 'author-1',
+          user_info: {
+            name: 'Author Name',
+            avatarUrl: null,
+            isAuthor: true,
           },
         }
       );
