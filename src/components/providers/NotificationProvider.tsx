@@ -169,7 +169,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
           className: 'border-l-4 border-l-[#eab308]',
           action: {
             label: 'View',
-            onClick: () => router.push('/activity'),
+            onClick: () => router.push('/activity?tab=kudos'),
           },
         });
       }

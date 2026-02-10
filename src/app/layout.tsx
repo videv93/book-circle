@@ -34,7 +34,7 @@ export default function RootLayout({
           <NotificationProvider>
             {children}
           </NotificationProvider>
-          <Toaster />
+          <Toaster position="top-right" />
         </AuthProvider>
       </body>
     </html>

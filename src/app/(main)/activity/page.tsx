@@ -2,12 +2,12 @@ import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { auth } from '@/lib/auth';
 import { getActivityFeed } from '@/actions/social/getActivityFeed';
-import { ActivityFeed } from '@/components/features/social';
+import { getKudosReceived } from '@/actions/social';
+import { ActivityTabs } from '@/components/features/social';
 import { ActivityPageEffect } from '@/components/features/social/ActivityPageEffect';
 import { PageHeader } from '@/components/layout/PageHeader';
 
 export default async function ActivityPage() {
-  // Authenticate user
   const headersList = await headers();
   const session = await auth.api.getSession({ headers: headersList });
 
@@ -15,11 +15,14 @@ export default async function ActivityPage() {
     redirect('/login?callbackUrl=/activity');
   }
 
-  // Fetch initial activity feed data
   const result = await getActivityFeed({ limit: 20, offset: 0 });
 
+  const kudosResult = await getKudosReceived({ limit: 20, offset: 0 });
+  const kudosData = kudosResult.success
+    ? kudosResult.data
+    : { kudos: [], total: 0, hasMore: false };
+
   if (!result.success) {
-    // Handle error - show empty state
     return (
       <main className="container mx-auto px-4 py-8 max-w-2xl">
         <PageHeader title="Activity" />
@@ -37,10 +40,12 @@ export default async function ActivityPage() {
   return (
     <main className="container mx-auto px-4 py-8 max-w-2xl">
       <ActivityPageEffect />
-      <ActivityFeed
+      <ActivityTabs
         initialActivities={activities}
         initialTotal={total}
         hasFollows={hasFollows}
+        initialKudos={kudosData.kudos}
+        initialKudosTotal={kudosData.total}
       />
     </main>
   );
