@@ -1,4 +1,9 @@
 /**
+ * Maximum number of books a free tier user can track.
+ */
+export const FREE_TIER_BOOK_LIMIT = 3;
+
+/**
  * Maximum number of streak freezes a user can hold.
  */
 export const MAX_STREAK_FREEZES = 5;

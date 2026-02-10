@@ -4,8 +4,10 @@ import { z } from 'zod';
 import { headers } from 'next/headers';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { isPremium } from '@/lib/premium';
+import { FREE_TIER_BOOK_LIMIT } from '@/lib/config/constants';
 import type { Book, ReadingStatus } from '@prisma/client';
-import type { ActionResult, UserBookWithBook } from './types';
+import type { AddToLibraryResult } from './types';
 
 // Input validation schema
 const addToLibrarySchema = z.object({
@@ -28,7 +30,7 @@ export type AddToLibraryInput = z.infer<typeof addToLibrarySchema>;
  */
 export async function addToLibrary(
   input: AddToLibraryInput
-): Promise<ActionResult<UserBookWithBook>> {
+): Promise<AddToLibraryResult> {
   try {
     // Get authenticated user
     const headersList = await headers();
@@ -102,22 +104,60 @@ export async function addToLibrary(
     });
 
     if (existingUserBook) {
-      // If soft-deleted, restore with new status
-      if (existingUserBook.deletedAt) {
-        const restored = await prisma.userBook.update({
-          where: { id: existingUserBook.id },
-          data: {
-            deletedAt: null,
-            status: validated.status as ReadingStatus,
-            progress: validated.status === 'FINISHED' ? 100 : 0,
-            dateAdded: new Date(),
-            dateFinished: validated.status === 'FINISHED' ? new Date() : null,
-          },
-          include: { book: true },
-        });
-        return { success: true, data: restored };
+      // Active (non-deleted) duplicate — no limit check needed
+      if (!existingUserBook.deletedAt) {
+        return { success: false, error: 'This book is already in your library' };
       }
-      return { success: false, error: 'This book is already in your library' };
+
+      // Soft-deleted — restoring would increase active count, so check limit
+      const userIsPremium = await isPremium(session.user.id);
+      if (!userIsPremium) {
+        const activeBookCount = await prisma.userBook.count({
+          where: { userId: session.user.id, deletedAt: null },
+        });
+        if (activeBookCount >= FREE_TIER_BOOK_LIMIT) {
+          return {
+            success: false,
+            error: `You've reached the free tier limit of ${FREE_TIER_BOOK_LIMIT} books. Upgrade to premium for unlimited tracking!`,
+            code: 'BOOK_LIMIT_REACHED',
+            premiumStatus: 'FREE',
+            currentBookCount: activeBookCount,
+            maxBooks: FREE_TIER_BOOK_LIMIT,
+          };
+        }
+      }
+
+      // Restore soft-deleted book
+      const restored = await prisma.userBook.update({
+        where: { id: existingUserBook.id },
+        data: {
+          deletedAt: null,
+          status: validated.status as ReadingStatus,
+          progress: validated.status === 'FINISHED' ? 100 : 0,
+          dateAdded: new Date(),
+          dateFinished: validated.status === 'FINISHED' ? new Date() : null,
+        },
+        include: { book: true },
+      });
+      return { success: true, data: restored };
+    }
+
+    // New book — check limit for free users
+    const userIsPremium = await isPremium(session.user.id);
+    if (!userIsPremium) {
+      const activeBookCount = await prisma.userBook.count({
+        where: { userId: session.user.id, deletedAt: null },
+      });
+      if (activeBookCount >= FREE_TIER_BOOK_LIMIT) {
+        return {
+          success: false,
+          error: `You've reached the free tier limit of ${FREE_TIER_BOOK_LIMIT} books. Upgrade to premium for unlimited tracking!`,
+          code: 'BOOK_LIMIT_REACHED',
+          premiumStatus: 'FREE',
+          currentBookCount: activeBookCount,
+          maxBooks: FREE_TIER_BOOK_LIMIT,
+        };
+      }
     }
 
     // Create UserBook record

@@ -25,6 +25,27 @@ export interface UserBookStatus {
 }
 
 /**
+ * Error returned when a free tier user hits the book limit.
+ * Superset of ActionResult failure — existing consumers still work.
+ */
+export type BookLimitError = {
+  success: false;
+  error: string;
+  code: 'BOOK_LIMIT_REACHED';
+  premiumStatus: string;
+  currentBookCount: number;
+  maxBooks: number;
+};
+
+/**
+ * Result type for addToLibrary that includes the book limit error branch.
+ */
+export type AddToLibraryResult =
+  | { success: true; data: UserBookWithBook }
+  | { success: false; error: string }
+  | BookLimitError;
+
+/**
  * Input type for adding a book to library
  */
 export interface AddToLibraryInput {

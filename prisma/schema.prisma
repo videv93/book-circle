@@ -297,7 +297,7 @@ model Payment {
   id              String        @id @default(cuid())
   userId          String        @map("user_id")
   polarCheckoutId String        @unique @map("polar_checkout_id")
-  amount          Decimal
+  amount          Decimal       @db.Decimal(10, 2)
   currency        String        @default("USD")
   status          PaymentStatus @default(PENDING)
   createdAt       DateTime      @default(now()) @map("created_at")
@@ -306,7 +306,6 @@ model Payment {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
-  @@index([polarCheckoutId])
   @@index([createdAt])
   @@map("payments")
 }

@@ -1,6 +1,6 @@
 # Story 7.1: Premium Data Model & Status Utility
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -162,6 +162,7 @@ model Payment {
 
 - 2026-02-10: Story created by create-story workflow — comprehensive context engine analysis
 - 2026-02-10: Implementation complete — All 4 tasks implemented with 10 unit tests passing. Fixed ProfileView.test.tsx to include new User fields.
+- 2026-02-10: Code review fixes — Removed redundant @@index([polarCheckoutId]) (unique already creates index), added @db.Decimal(10, 2) precision to Payment.amount, added try/catch to isPremium() for safe-default on DB errors, added DB error test.
 
 ## Dev Agent Record
 
@@ -179,16 +180,16 @@ Claude Opus 4.6
 ### Completion Notes List
 
 - ✅ Task 1: Added `PremiumStatus` enum (FREE, PREMIUM) and `PaymentStatus` enum (PENDING, COMPLETED, FAILED, REFUNDED) to Prisma schema. Added `premiumStatus` (default FREE) and `polarCustomerId` (optional) fields to User model. `prisma generate` confirms valid schema.
-- ✅ Task 2: Created `Payment` model with all required fields (id, userId, polarCheckoutId unique, amount Decimal, currency, status, timestamps). Added `payments` relation to User. Indexes on userId, polarCheckoutId, createdAt.
+- ✅ Task 2: Created `Payment` model with all required fields (id, userId, polarCheckoutId unique, amount Decimal(10,2), currency, status, timestamps). Added `payments` relation to User. Indexes on userId, createdAt.
 - ✅ Task 3: Created `src/lib/billing/types.ts` with `PaymentProvider` interface and `CheckoutSession`, `WebhookEvent`, `PaymentResult` types. 5 unit tests validate interface contract.
-- ✅ Task 4: Created `src/lib/premium.ts` with `isPremium(userId)` utility querying User.premiumStatus. Returns false for non-existent users (safe default). 5 unit tests cover all cases.
+- ✅ Task 4: Created `src/lib/premium.ts` with `isPremium(userId)` utility querying User.premiumStatus. Returns false for non-existent users and DB errors (safe default). 6 unit tests cover all cases.
 - ✅ Fixed `ProfileView.test.tsx` to include `premiumStatus: 'FREE'` and `polarCustomerId: null` in mock User object (type compliance).
 
 ### File List
 
 - `prisma/schema.prisma` — MODIFIED: Added PremiumStatus enum, PaymentStatus enum, premiumStatus + polarCustomerId User fields, Payment model, payments relation
 - `src/lib/premium.ts` — NEW: isPremium(userId) utility function
-- `src/lib/premium.test.ts` — NEW: 5 unit tests for isPremium
+- `src/lib/premium.test.ts` — NEW: 6 unit tests for isPremium
 - `src/lib/billing/types.ts` — NEW: PaymentProvider interface + CheckoutSession, WebhookEvent, PaymentResult types
 - `src/lib/billing/types.test.ts` — NEW: 5 unit tests for billing type contracts
 - `src/components/features/profile/ProfileView.test.tsx` — MODIFIED: Added premiumStatus and polarCustomerId to mock User

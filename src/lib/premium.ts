@@ -8,10 +8,14 @@ import { prisma } from '@/lib/prisma';
  * @returns true if user has PREMIUM status, false otherwise (including non-existent users)
  */
 export async function isPremium(userId: string): Promise<boolean> {
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { premiumStatus: true },
-  });
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { premiumStatus: true },
+    });
 
-  return user?.premiumStatus === 'PREMIUM';
+    return user?.premiumStatus === 'PREMIUM';
+  } catch {
+    return false;
+  }
 }

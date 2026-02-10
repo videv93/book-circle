@@ -57,6 +57,14 @@ describe('isPremium', () => {
     });
   });
 
+  it('returns false when database query fails', async () => {
+    mockFindUnique.mockRejectedValue(new Error('Connection refused'));
+
+    const result = await isPremium('user-1');
+
+    expect(result).toBe(false);
+  });
+
   it('only selects premiumStatus field for efficiency', async () => {
     mockFindUnique.mockResolvedValue({ premiumStatus: 'FREE' });
 

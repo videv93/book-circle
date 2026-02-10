@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { addToLibrary, type AddToLibraryInput } from './addToLibrary';
+import { FREE_TIER_BOOK_LIMIT } from '@/lib/config/constants';
 
 // Mock dependencies
 vi.mock('next/headers', () => ({
@@ -23,13 +24,20 @@ vi.mock('@/lib/prisma', () => ({
     userBook: {
       findUnique: vi.fn(),
       create: vi.fn(),
+      update: vi.fn(),
+      count: vi.fn(),
     },
   },
+}));
+
+vi.mock('@/lib/premium', () => ({
+  isPremium: vi.fn(),
 }));
 
 import { headers } from 'next/headers';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { isPremium } from '@/lib/premium';
 
 const mockHeaders = headers as unknown as ReturnType<typeof vi.fn>;
 const mockGetSession = auth.api.getSession as unknown as ReturnType<typeof vi.fn>;
@@ -37,6 +45,9 @@ const mockBookUpsert = prisma.book.upsert as unknown as ReturnType<typeof vi.fn>
 const mockBookCreate = prisma.book.create as unknown as ReturnType<typeof vi.fn>;
 const mockUserBookFindUnique = prisma.userBook.findUnique as unknown as ReturnType<typeof vi.fn>;
 const mockUserBookCreate = prisma.userBook.create as unknown as ReturnType<typeof vi.fn>;
+const mockUserBookUpdate = prisma.userBook.update as unknown as ReturnType<typeof vi.fn>;
+const mockUserBookCount = prisma.userBook.count as unknown as ReturnType<typeof vi.fn>;
+const mockIsPremium = isPremium as unknown as ReturnType<typeof vi.fn>;
 
 describe('addToLibrary', () => {
   const validInput: AddToLibraryInput = {
@@ -63,6 +74,7 @@ describe('addToLibrary', () => {
     progress: 0,
     dateAdded: new Date(),
     dateFinished: null,
+    deletedAt: null,
     createdAt: new Date(),
     updatedAt: new Date(),
     book: mockBook,
@@ -71,6 +83,9 @@ describe('addToLibrary', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockHeaders.mockResolvedValue(new Headers());
+    // Default: free user with 0 active books
+    mockIsPremium.mockResolvedValue(false);
+    mockUserBookCount.mockResolvedValue(0);
   });
 
   it('returns error when user is not authenticated', async () => {
@@ -215,5 +230,146 @@ describe('addToLibrary', () => {
     );
 
     consoleSpy.mockRestore();
+  });
+
+  describe('book limit enforcement', () => {
+    beforeEach(() => {
+      mockGetSession.mockResolvedValue({ user: { id: 'user-123' } });
+      mockBookUpsert.mockResolvedValue(mockBook);
+    });
+
+    it('allows free user with fewer than 3 active books to add a book', async () => {
+      mockUserBookFindUnique.mockResolvedValue(null);
+      mockUserBookCount.mockResolvedValue(1);
+      mockUserBookCreate.mockResolvedValue(mockUserBook);
+
+      const result = await addToLibrary(validInput);
+
+      expect(result.success).toBe(true);
+      expect(mockIsPremium).toHaveBeenCalledWith('user-123');
+      expect(mockUserBookCount).toHaveBeenCalledWith({
+        where: { userId: 'user-123', deletedAt: null },
+      });
+    });
+
+    it('blocks free user with exactly 3 active books from adding a 4th', async () => {
+      mockUserBookFindUnique.mockResolvedValue(null);
+      mockUserBookCount.mockResolvedValue(3);
+
+      const result = await addToLibrary(validInput);
+
+      expect(result.success).toBe(false);
+      if (!result.success && 'code' in result) {
+        expect(result.code).toBe('BOOK_LIMIT_REACHED');
+        expect(result.premiumStatus).toBe('FREE');
+        expect(result.currentBookCount).toBe(3);
+        expect(result.maxBooks).toBe(FREE_TIER_BOOK_LIMIT);
+      } else {
+        throw new Error('Expected BOOK_LIMIT_REACHED error');
+      }
+    });
+
+    it('includes correct metadata in BOOK_LIMIT_REACHED error', async () => {
+      mockUserBookFindUnique.mockResolvedValue(null);
+      mockUserBookCount.mockResolvedValue(5);
+
+      const result = await addToLibrary(validInput);
+
+      expect(result.success).toBe(false);
+      if (!result.success && 'code' in result) {
+        expect(result.code).toBe('BOOK_LIMIT_REACHED');
+        expect(result.premiumStatus).toBe('FREE');
+        expect(result.currentBookCount).toBe(5);
+        expect(result.maxBooks).toBe(3);
+        expect(result.error).toContain('free tier limit');
+      }
+    });
+
+    it('allows premium user to add books with no limit enforced', async () => {
+      mockIsPremium.mockResolvedValue(true);
+      mockUserBookFindUnique.mockResolvedValue(null);
+      mockUserBookCreate.mockResolvedValue(mockUserBook);
+
+      const result = await addToLibrary(validInput);
+
+      expect(result.success).toBe(true);
+      expect(mockIsPremium).toHaveBeenCalledWith('user-123');
+      expect(mockUserBookCount).not.toHaveBeenCalled();
+    });
+
+    it('excludes soft-deleted books from active book count', async () => {
+      mockUserBookFindUnique.mockResolvedValue(null);
+      mockUserBookCount.mockResolvedValue(2);
+      mockUserBookCreate.mockResolvedValue(mockUserBook);
+
+      const result = await addToLibrary(validInput);
+
+      expect(result.success).toBe(true);
+      expect(mockUserBookCount).toHaveBeenCalledWith({
+        where: { userId: 'user-123', deletedAt: null },
+      });
+    });
+
+    it('blocks restoring a soft-deleted book when free user is at limit', async () => {
+      mockUserBookFindUnique.mockResolvedValue({
+        ...mockUserBook,
+        deletedAt: new Date('2026-01-01'),
+      });
+      mockUserBookCount.mockResolvedValue(3);
+
+      const result = await addToLibrary(validInput);
+
+      expect(result.success).toBe(false);
+      if (!result.success && 'code' in result) {
+        expect(result.code).toBe('BOOK_LIMIT_REACHED');
+        expect(result.currentBookCount).toBe(3);
+      }
+      expect(mockUserBookUpdate).not.toHaveBeenCalled();
+    });
+
+    it('allows restoring a soft-deleted book when free user is under limit', async () => {
+      const restoredBook = { ...mockUserBook, deletedAt: null, dateAdded: new Date() };
+      mockUserBookFindUnique.mockResolvedValue({
+        ...mockUserBook,
+        deletedAt: new Date('2026-01-01'),
+      });
+      mockUserBookCount.mockResolvedValue(2);
+      mockUserBookUpdate.mockResolvedValue(restoredBook);
+
+      const result = await addToLibrary(validInput);
+
+      expect(result.success).toBe(true);
+      expect(mockUserBookUpdate).toHaveBeenCalled();
+    });
+
+    it('returns "already in library" for non-deleted duplicates without limit check', async () => {
+      mockUserBookFindUnique.mockResolvedValue(mockUserBook);
+
+      const result = await addToLibrary(validInput);
+
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.error).toBe('This book is already in your library');
+        expect('code' in result).toBe(false);
+      }
+      expect(mockIsPremium).not.toHaveBeenCalled();
+      expect(mockUserBookCount).not.toHaveBeenCalled();
+    });
+
+    it('allows premium user to restore soft-deleted book with no limit check', async () => {
+      const restoredBook = { ...mockUserBook, deletedAt: null };
+      mockIsPremium.mockResolvedValue(true);
+      mockUserBookFindUnique.mockResolvedValue({
+        ...mockUserBook,
+        deletedAt: new Date('2026-01-01'),
+      });
+      mockUserBookUpdate.mockResolvedValue(restoredBook);
+
+      const result = await addToLibrary(validInput);
+
+      expect(result.success).toBe(true);
+      expect(mockUserBookCount).not.toHaveBeenCalled();
+      expect(mockUserBookUpdate).toHaveBeenCalled();
+    });
   });
 });
