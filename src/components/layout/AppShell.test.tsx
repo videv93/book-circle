@@ -2,6 +2,15 @@ import { render, screen } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { AppShell } from './AppShell';
 
+// Mock auth and prisma to prevent DATABASE_URL errors from transitive imports
+vi.mock('@/lib/auth', () => ({
+  auth: { api: { getSession: vi.fn() } },
+}));
+
+vi.mock('@/lib/prisma', () => ({
+  prisma: {},
+}));
+
 // Mock next/navigation
 vi.mock('next/navigation', () => ({
   usePathname: () => '/home',

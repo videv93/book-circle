@@ -53,7 +53,7 @@ describe('Landing Page', () => {
       const page = await Home();
       render(page);
 
-      expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(/flappy bird/i);
+      expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(/Book Circle/i);
     });
 
     it('renders a tagline', async () => {

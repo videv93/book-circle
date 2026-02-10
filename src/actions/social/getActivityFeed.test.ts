@@ -36,7 +36,7 @@ vi.mock('@/lib/prisma', () => ({
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 
-const mockGetSession = auth.api.getSession as ReturnType<typeof vi.fn>;
+const mockGetSession = auth.api.getSession as unknown as ReturnType<typeof vi.fn>;
 const mockFollowFindMany = prisma.follow.findMany as ReturnType<typeof vi.fn>;
 const mockSessionFindMany = prisma.readingSession.findMany as ReturnType<typeof vi.fn>;
 const mockUserBookFindMany = prisma.userBook.findMany as ReturnType<typeof vi.fn>;

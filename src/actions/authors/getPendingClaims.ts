@@ -21,7 +21,7 @@ export interface PendingClaimData {
   book: {
     id: string;
     title: string;
-    author: string;
+    author: string | null;
     coverUrl: string | null;
   };
 }

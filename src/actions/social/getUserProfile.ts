@@ -30,7 +30,7 @@ export interface FinishedBook {
   book: {
     id: string;
     title: string;
-    author: string;
+    author: string | null;
     coverUrl: string | null;
   };
 }
@@ -40,7 +40,7 @@ export interface CurrentlyReadingBook {
   book: {
     id: string;
     title: string;
-    author: string;
+    author: string | null;
     coverUrl: string | null;
   };
 }

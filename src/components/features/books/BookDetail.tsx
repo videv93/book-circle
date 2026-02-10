@@ -34,7 +34,7 @@ export function BookDetail({ data, initialSessions = [], initialCursor = null }:
     id: book.id,
     source: 'openlibrary', // Fallback - actual source not tracked in Book model
     title: book.title,
-    authors: [book.author],
+    authors: book.author ? [book.author] : [],
     publishedYear: book.publishedYear ?? undefined,
     coverUrl: book.coverUrl ?? undefined,
     isbn10: book.isbn10 ?? undefined,

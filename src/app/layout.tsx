@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Flappy Bird",
+  title: "Book Circle",
   description: "Track your reading journey",
 };
 

@@ -45,12 +45,12 @@ describe('useStreakFreeze', () => {
     mockAuth.mockResolvedValue({
       user: { id: 'user-1', email: 'test@test.com', emailVerified: false, name: 'Test', createdAt: new Date(), updatedAt: new Date() },
       session: { id: 'sess-1', userId: 'user-1', token: 'tok', expiresAt: new Date(), createdAt: new Date(), updatedAt: new Date() },
-    } as unknown);
+    } as any);
     mockTransaction.mockImplementation((ops: unknown) => Promise.resolve(ops));
   });
 
   it('returns error when not authenticated', async () => {
-    mockAuth.mockResolvedValue(null as unknown);
+    mockAuth.mockResolvedValue(null as any);
 
     const result = await useStreakFreeze({ timezone: 'UTC' });
 
@@ -77,7 +77,7 @@ describe('useStreakFreeze', () => {
       lastGoalMetDate: new Date('2026-02-04T00:00:00.000Z'),
       freezeUsedToday: false,
       freezesAvailable: 0,
-    } as unknown);
+    } as any);
 
     const result = await useStreakFreeze({ timezone: 'UTC' });
 
@@ -97,7 +97,7 @@ describe('useStreakFreeze', () => {
       lastGoalMetDate: new Date('2026-02-06T00:00:00.000Z'), // today
       freezeUsedToday: false,
       freezesAvailable: 3,
-    } as unknown);
+    } as any);
     mockGetDateInTimezone.mockReturnValue('2026-02-06');
 
     const result = await useStreakFreeze({ timezone: 'UTC' });
@@ -117,7 +117,7 @@ describe('useStreakFreeze', () => {
       lastGoalMetDate: new Date('2026-02-05T00:00:00.000Z'), // yesterday
       freezeUsedToday: false,
       freezesAvailable: 3,
-    } as unknown);
+    } as any);
     mockGetDateInTimezone
       .mockReturnValueOnce('2026-02-06') // today
       .mockReturnValueOnce('2026-02-05') // lastGoalMetDate
@@ -140,7 +140,7 @@ describe('useStreakFreeze', () => {
       lastGoalMetDate: new Date('2026-02-04T00:00:00.000Z'), // 2 days ago
       freezeUsedToday: false,
       freezesAvailable: 3,
-    } as unknown);
+    } as any);
     mockGetDateInTimezone
       .mockReturnValueOnce('2026-02-06') // today
       .mockReturnValueOnce('2026-02-04') // lastGoalMetDate
@@ -150,7 +150,7 @@ describe('useStreakFreeze', () => {
       userId: 'user-1',
       date: new Date('2026-02-05T00:00:00.000Z'),
       freezeUsed: true,
-    } as unknown);
+    } as any);
 
     const result = await useStreakFreeze({ timezone: 'UTC' });
 
@@ -170,7 +170,7 @@ describe('useStreakFreeze', () => {
       lastGoalMetDate: new Date('2026-02-04T00:00:00.000Z'), // 2 days ago
       freezeUsedToday: false,
       freezesAvailable: 3,
-    } as unknown);
+    } as any);
     mockGetDateInTimezone
       .mockReturnValueOnce('2026-02-06') // today
       .mockReturnValueOnce('2026-02-04') // lastGoalMetDate
@@ -205,7 +205,7 @@ describe('useStreakFreeze', () => {
       lastGoalMetDate: new Date('2026-02-01T00:00:00.000Z'),
       freezeUsedToday: false,
       freezesAvailable: 2,
-    } as unknown);
+    } as any);
     mockGetDateInTimezone
       .mockReturnValueOnce('2026-02-06') // today
       .mockReturnValueOnce('2026-02-01') // lastGoalMetDate

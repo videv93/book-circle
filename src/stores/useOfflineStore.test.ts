@@ -11,6 +11,7 @@ vi.mock('@/lib/idb-storage', () => ({
 }));
 
 const testSession = {
+  userId: 'user-1',
   bookId: 'book-1',
   duration: 300,
   startedAt: '2026-02-06T10:00:00.000Z',

@@ -28,7 +28,7 @@ vi.mock('@/lib/prisma', () => ({
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 
-const mockGetSession = auth.api.getSession as ReturnType<typeof vi.fn>;
+const mockGetSession = auth.api.getSession as unknown as ReturnType<typeof vi.fn>;
 const mockSessionFindUnique = prisma.readingSession.findUnique as ReturnType<typeof vi.fn>;
 const mockKudosDelete = (prisma as unknown as { kudos: { delete: ReturnType<typeof vi.fn> } }).kudos.delete;
 const mockKudosCount = (prisma as unknown as { kudos: { count: ReturnType<typeof vi.fn> } }).kudos.count;

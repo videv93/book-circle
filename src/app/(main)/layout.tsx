@@ -31,7 +31,7 @@ function getPageTitle(pathname: string): string | undefined {
     }
   }
 
-  return 'Flappy Bird';
+  return 'Book Circle';
 }
 
 export default function MainLayout({

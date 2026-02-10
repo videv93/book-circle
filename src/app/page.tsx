@@ -7,11 +7,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 
 export const metadata: Metadata = {
-  title: "Flappy Bird — Read Together. Never Alone.",
+  title: "Book Circle — Read Together. Never Alone.",
   description:
     "Track your reading habits, read alongside friends, and experience ambient author presence. Build streaks, give kudos, and never read alone again.",
   openGraph: {
-    title: "Flappy Bird — Read Together. Never Alone.",
+    title: "Book Circle — Read Together. Never Alone.",
     description:
       "Track your reading habits, read alongside friends, and experience ambient author presence.",
     type: "website",
@@ -53,7 +53,7 @@ export default async function Home() {
         {/* Hero Section */}
         <section className="flex flex-col items-center text-center">
           <h1 className="text-4xl font-bold tracking-tight text-warm-text dark:text-foreground md:text-5xl">
-            Flappy Bird
+            Book Circle
           </h1>
           <p className="mt-4 max-w-md text-lg text-warm-text-muted dark:text-muted-foreground">
             Read together. Never alone.

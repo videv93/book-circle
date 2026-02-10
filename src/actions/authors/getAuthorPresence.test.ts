@@ -10,8 +10,8 @@ vi.mock('@/lib/prisma', () => ({
 
 import { prisma } from '@/lib/prisma';
 
-const mockAuthorClaim = prisma.authorClaim as { findFirst: ReturnType<typeof vi.fn> };
-const mockRoomPresence = prisma.roomPresence as { findFirst: ReturnType<typeof vi.fn> };
+const mockAuthorClaim = prisma.authorClaim as unknown as { findFirst: ReturnType<typeof vi.fn> };
+const mockRoomPresence = prisma.roomPresence as unknown as { findFirst: ReturnType<typeof vi.fn> };
 
 describe('getAuthorPresence', () => {
   beforeEach(() => {

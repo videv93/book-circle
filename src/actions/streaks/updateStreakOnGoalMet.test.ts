@@ -55,12 +55,12 @@ describe('updateStreakOnGoalMet', () => {
     mockAuth.mockResolvedValue({
       user: { id: 'user-1', email: 'test@test.com', emailVerified: false, name: 'Test', createdAt: new Date(), updatedAt: new Date() },
       session: { id: 'sess-1', userId: 'user-1', token: 'tok', expiresAt: new Date(), createdAt: new Date(), updatedAt: new Date() },
-    } as unknown);
+    } as any);
     mockTransaction.mockImplementation((ops: unknown) => Promise.resolve(ops));
   });
 
   it('returns error when not authenticated', async () => {
-    mockAuth.mockResolvedValue(null as unknown);
+    mockAuth.mockResolvedValue(null as any);
 
     const result = await updateStreakOnGoalMet({ timezone: 'UTC' });
 
@@ -68,7 +68,7 @@ describe('updateStreakOnGoalMet', () => {
   });
 
   it('returns no_goal_set when user has no daily goal', async () => {
-    mockUserFind.mockResolvedValue({ dailyGoalMinutes: null } as unknown);
+    mockUserFind.mockResolvedValue({ dailyGoalMinutes: null } as any);
 
     const result = await updateStreakOnGoalMet({ timezone: 'UTC' });
 
@@ -80,8 +80,8 @@ describe('updateStreakOnGoalMet', () => {
   });
 
   it('returns goal_not_met when minutes below goal', async () => {
-    mockUserFind.mockResolvedValue({ dailyGoalMinutes: 30 } as unknown);
-    mockAggregate.mockResolvedValue({ _sum: { duration: 1500 } } as unknown); // 25 min
+    mockUserFind.mockResolvedValue({ dailyGoalMinutes: 30 } as any);
+    mockAggregate.mockResolvedValue({ _sum: { duration: 1500 } } as any); // 25 min
 
     const result = await updateStreakOnGoalMet({ timezone: 'UTC' });
 
@@ -93,8 +93,8 @@ describe('updateStreakOnGoalMet', () => {
   });
 
   it('creates new streak on first-ever goal met (AC #7)', async () => {
-    mockUserFind.mockResolvedValue({ dailyGoalMinutes: 15 } as unknown);
-    mockAggregate.mockResolvedValue({ _sum: { duration: 1200 } } as unknown); // 20 min
+    mockUserFind.mockResolvedValue({ dailyGoalMinutes: 15 } as any);
+    mockAggregate.mockResolvedValue({ _sum: { duration: 1200 } } as any); // 20 min
     mockStreakFind.mockResolvedValue(null);
     mockGetDateInTimezone.mockImplementation((date: Date) => date.toISOString().split('T')[0]);
 
@@ -112,15 +112,15 @@ describe('updateStreakOnGoalMet', () => {
   });
 
   it('increments streak on consecutive day (AC #2)', async () => {
-    mockUserFind.mockResolvedValue({ dailyGoalMinutes: 15 } as unknown);
-    mockAggregate.mockResolvedValue({ _sum: { duration: 1200 } } as unknown);
+    mockUserFind.mockResolvedValue({ dailyGoalMinutes: 15 } as any);
+    mockAggregate.mockResolvedValue({ _sum: { duration: 1200 } } as any);
     mockStreakFind.mockResolvedValue({
       userId: 'user-1',
       currentStreak: 5,
       longestStreak: 10,
       lastGoalMetDate: new Date('2026-02-05T00:00:00.000Z'), // yesterday
       freezeUsedToday: false,
-    } as unknown);
+    } as any);
     // lastGoalMetDate returns yesterday's date string
     mockGetDateInTimezone.mockImplementation((date: Date) => {
       const iso = date.toISOString().split('T')[0];
@@ -139,15 +139,15 @@ describe('updateStreakOnGoalMet', () => {
   });
 
   it('resets streak on missed day (AC #3)', async () => {
-    mockUserFind.mockResolvedValue({ dailyGoalMinutes: 15 } as unknown);
-    mockAggregate.mockResolvedValue({ _sum: { duration: 1200 } } as unknown);
+    mockUserFind.mockResolvedValue({ dailyGoalMinutes: 15 } as any);
+    mockAggregate.mockResolvedValue({ _sum: { duration: 1200 } } as any);
     mockStreakFind.mockResolvedValue({
       userId: 'user-1',
       currentStreak: 10,
       longestStreak: 10,
       lastGoalMetDate: new Date('2026-02-03T00:00:00.000Z'), // 3 days ago
       freezeUsedToday: false,
-    } as unknown);
+    } as any);
     mockDailyProgressFind.mockResolvedValue(null); // no freeze yesterday
     mockGetDateInTimezone.mockImplementation((date: Date) => date.toISOString().split('T')[0]);
 
@@ -164,15 +164,15 @@ describe('updateStreakOnGoalMet', () => {
   });
 
   it('returns already_credited_today for same-day idempotency (AC #6)', async () => {
-    mockUserFind.mockResolvedValue({ dailyGoalMinutes: 15 } as unknown);
-    mockAggregate.mockResolvedValue({ _sum: { duration: 1200 } } as unknown);
+    mockUserFind.mockResolvedValue({ dailyGoalMinutes: 15 } as any);
+    mockAggregate.mockResolvedValue({ _sum: { duration: 1200 } } as any);
     mockStreakFind.mockResolvedValue({
       userId: 'user-1',
       currentStreak: 5,
       longestStreak: 5,
       lastGoalMetDate: new Date('2026-02-06T00:00:00.000Z'), // today
       freezeUsedToday: false,
-    } as unknown);
+    } as any);
     mockGetDateInTimezone.mockReturnValue('2026-02-06');
 
     const result = await updateStreakOnGoalMet({ timezone: 'UTC' });
@@ -187,21 +187,21 @@ describe('updateStreakOnGoalMet', () => {
   });
 
   it('continues streak when yesterday was frozen (AC #8)', async () => {
-    mockUserFind.mockResolvedValue({ dailyGoalMinutes: 15 } as unknown);
-    mockAggregate.mockResolvedValue({ _sum: { duration: 1200 } } as unknown);
+    mockUserFind.mockResolvedValue({ dailyGoalMinutes: 15 } as any);
+    mockAggregate.mockResolvedValue({ _sum: { duration: 1200 } } as any);
     mockStreakFind.mockResolvedValue({
       userId: 'user-1',
       currentStreak: 7,
       longestStreak: 7,
       lastGoalMetDate: new Date('2026-02-04T00:00:00.000Z'), // 2 days ago
       freezeUsedToday: false,
-    } as unknown);
+    } as any);
     // Yesterday had a freeze
     mockDailyProgressFind.mockResolvedValue({
       userId: 'user-1',
       date: new Date('2026-02-05T00:00:00.000Z'),
       freezeUsed: true,
-    } as unknown);
+    } as any);
     mockGetDateInTimezone.mockImplementation((date: Date) => date.toISOString().split('T')[0]);
 
     const result = await updateStreakOnGoalMet({ timezone: 'UTC' });
@@ -215,15 +215,15 @@ describe('updateStreakOnGoalMet', () => {
   });
 
   it('resets streak on multi-day gap (AC #9)', async () => {
-    mockUserFind.mockResolvedValue({ dailyGoalMinutes: 15 } as unknown);
-    mockAggregate.mockResolvedValue({ _sum: { duration: 1200 } } as unknown);
+    mockUserFind.mockResolvedValue({ dailyGoalMinutes: 15 } as any);
+    mockAggregate.mockResolvedValue({ _sum: { duration: 1200 } } as any);
     mockStreakFind.mockResolvedValue({
       userId: 'user-1',
       currentStreak: 20,
       longestStreak: 20,
       lastGoalMetDate: new Date('2026-01-30T00:00:00.000Z'), // 7 days ago
       freezeUsedToday: false,
-    } as unknown);
+    } as any);
     mockDailyProgressFind.mockResolvedValue(null); // no freeze yesterday
     mockGetDateInTimezone.mockImplementation((date: Date) => date.toISOString().split('T')[0]);
 
@@ -238,15 +238,15 @@ describe('updateStreakOnGoalMet', () => {
   });
 
   it('updates longestStreak when currentStreak exceeds it', async () => {
-    mockUserFind.mockResolvedValue({ dailyGoalMinutes: 15 } as unknown);
-    mockAggregate.mockResolvedValue({ _sum: { duration: 1200 } } as unknown);
+    mockUserFind.mockResolvedValue({ dailyGoalMinutes: 15 } as any);
+    mockAggregate.mockResolvedValue({ _sum: { duration: 1200 } } as any);
     mockStreakFind.mockResolvedValue({
       userId: 'user-1',
       currentStreak: 10,
       longestStreak: 10,
       lastGoalMetDate: new Date('2026-02-05T00:00:00.000Z'),
       freezeUsedToday: false,
-    } as unknown);
+    } as any);
     mockGetDateInTimezone.mockImplementation((date: Date) => date.toISOString().split('T')[0]);
 
     const result = await updateStreakOnGoalMet({ timezone: 'UTC' });
@@ -259,8 +259,8 @@ describe('updateStreakOnGoalMet', () => {
   });
 
   it('calls $transaction for atomic updates', async () => {
-    mockUserFind.mockResolvedValue({ dailyGoalMinutes: 15 } as unknown);
-    mockAggregate.mockResolvedValue({ _sum: { duration: 1200 } } as unknown);
+    mockUserFind.mockResolvedValue({ dailyGoalMinutes: 15 } as any);
+    mockAggregate.mockResolvedValue({ _sum: { duration: 1200 } } as any);
     mockStreakFind.mockResolvedValue(null);
     mockGetDateInTimezone.mockImplementation((date: Date) => date.toISOString().split('T')[0]);
 
@@ -270,8 +270,8 @@ describe('updateStreakOnGoalMet', () => {
   });
 
   it('handles zero sessions gracefully', async () => {
-    mockUserFind.mockResolvedValue({ dailyGoalMinutes: 15 } as unknown);
-    mockAggregate.mockResolvedValue({ _sum: { duration: null } } as unknown);
+    mockUserFind.mockResolvedValue({ dailyGoalMinutes: 15 } as any);
+    mockAggregate.mockResolvedValue({ _sum: { duration: null } } as any);
 
     const result = await updateStreakOnGoalMet({ timezone: 'UTC' });
 
@@ -291,8 +291,8 @@ describe('updateStreakOnGoalMet', () => {
 
   // Freeze earning tests (Story 3.7)
   it('earns 1 freeze at 7-day milestone (AC #5)', async () => {
-    mockUserFind.mockResolvedValue({ dailyGoalMinutes: 15 } as unknown);
-    mockAggregate.mockResolvedValue({ _sum: { duration: 1200 } } as unknown);
+    mockUserFind.mockResolvedValue({ dailyGoalMinutes: 15 } as any);
+    mockAggregate.mockResolvedValue({ _sum: { duration: 1200 } } as any);
     mockStreakFind.mockResolvedValue({
       userId: 'user-1',
       currentStreak: 6,
@@ -300,7 +300,7 @@ describe('updateStreakOnGoalMet', () => {
       lastGoalMetDate: new Date('2026-02-05T00:00:00.000Z'), // yesterday
       freezeUsedToday: false,
       freezesAvailable: 0,
-    } as unknown);
+    } as any);
     mockGetDateInTimezone.mockImplementation((date: Date) => date.toISOString().split('T')[0]);
 
     const result = await updateStreakOnGoalMet({ timezone: 'UTC' });
@@ -315,8 +315,8 @@ describe('updateStreakOnGoalMet', () => {
   });
 
   it('earns 3 freezes at 30-day milestone (AC #6)', async () => {
-    mockUserFind.mockResolvedValue({ dailyGoalMinutes: 15 } as unknown);
-    mockAggregate.mockResolvedValue({ _sum: { duration: 1200 } } as unknown);
+    mockUserFind.mockResolvedValue({ dailyGoalMinutes: 15 } as any);
+    mockAggregate.mockResolvedValue({ _sum: { duration: 1200 } } as any);
     mockStreakFind.mockResolvedValue({
       userId: 'user-1',
       currentStreak: 29,
@@ -324,7 +324,7 @@ describe('updateStreakOnGoalMet', () => {
       lastGoalMetDate: new Date('2026-02-05T00:00:00.000Z'),
       freezeUsedToday: false,
       freezesAvailable: 1,
-    } as unknown);
+    } as any);
     mockGetDateInTimezone.mockImplementation((date: Date) => date.toISOString().split('T')[0]);
 
     const result = await updateStreakOnGoalMet({ timezone: 'UTC' });
@@ -338,8 +338,8 @@ describe('updateStreakOnGoalMet', () => {
   });
 
   it('caps freezes at MAX_STREAK_FREEZES (5) (AC #7)', async () => {
-    mockUserFind.mockResolvedValue({ dailyGoalMinutes: 15 } as unknown);
-    mockAggregate.mockResolvedValue({ _sum: { duration: 1200 } } as unknown);
+    mockUserFind.mockResolvedValue({ dailyGoalMinutes: 15 } as any);
+    mockAggregate.mockResolvedValue({ _sum: { duration: 1200 } } as any);
     mockStreakFind.mockResolvedValue({
       userId: 'user-1',
       currentStreak: 29,
@@ -347,7 +347,7 @@ describe('updateStreakOnGoalMet', () => {
       lastGoalMetDate: new Date('2026-02-05T00:00:00.000Z'),
       freezeUsedToday: false,
       freezesAvailable: 4,
-    } as unknown);
+    } as any);
     mockGetDateInTimezone.mockImplementation((date: Date) => date.toISOString().split('T')[0]);
 
     const result = await updateStreakOnGoalMet({ timezone: 'UTC' });
@@ -362,8 +362,8 @@ describe('updateStreakOnGoalMet', () => {
   });
 
   it('returns freezesEarned: 0 for non-milestone streaks', async () => {
-    mockUserFind.mockResolvedValue({ dailyGoalMinutes: 15 } as unknown);
-    mockAggregate.mockResolvedValue({ _sum: { duration: 1200 } } as unknown);
+    mockUserFind.mockResolvedValue({ dailyGoalMinutes: 15 } as any);
+    mockAggregate.mockResolvedValue({ _sum: { duration: 1200 } } as any);
     mockStreakFind.mockResolvedValue({
       userId: 'user-1',
       currentStreak: 4,
@@ -371,7 +371,7 @@ describe('updateStreakOnGoalMet', () => {
       lastGoalMetDate: new Date('2026-02-05T00:00:00.000Z'),
       freezeUsedToday: false,
       freezesAvailable: 1,
-    } as unknown);
+    } as any);
     mockGetDateInTimezone.mockImplementation((date: Date) => date.toISOString().split('T')[0]);
 
     const result = await updateStreakOnGoalMet({ timezone: 'UTC' });
@@ -385,8 +385,8 @@ describe('updateStreakOnGoalMet', () => {
   });
 
   it('earns 1 freeze at 14-day milestone', async () => {
-    mockUserFind.mockResolvedValue({ dailyGoalMinutes: 15 } as unknown);
-    mockAggregate.mockResolvedValue({ _sum: { duration: 1200 } } as unknown);
+    mockUserFind.mockResolvedValue({ dailyGoalMinutes: 15 } as any);
+    mockAggregate.mockResolvedValue({ _sum: { duration: 1200 } } as any);
     mockStreakFind.mockResolvedValue({
       userId: 'user-1',
       currentStreak: 13,
@@ -394,7 +394,7 @@ describe('updateStreakOnGoalMet', () => {
       lastGoalMetDate: new Date('2026-02-05T00:00:00.000Z'),
       freezeUsedToday: false,
       freezesAvailable: 1,
-    } as unknown);
+    } as any);
     mockGetDateInTimezone.mockImplementation((date: Date) => date.toISOString().split('T')[0]);
 
     const result = await updateStreakOnGoalMet({ timezone: 'UTC' });

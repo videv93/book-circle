@@ -4,6 +4,14 @@ import userEvent from '@testing-library/user-event';
 import { ModerationQueue } from './ModerationQueue';
 import type { ModerationQueueItem } from '@/actions/admin/getModerationQueue';
 
+vi.mock('@/lib/auth', () => ({
+  auth: { api: { getSession: vi.fn() } },
+}));
+
+vi.mock('@/lib/prisma', () => ({
+  prisma: {},
+}));
+
 vi.mock('@/actions/admin/getModerationQueue', () => ({
   getModerationQueue: vi.fn().mockResolvedValue({
     success: true,
@@ -21,6 +29,14 @@ vi.mock('@/actions/admin/restoreContent', () => ({
 
 vi.mock('@/actions/admin/removeContent', () => ({
   removeContent: vi.fn().mockResolvedValue({ success: true, data: {} }),
+}));
+
+vi.mock('@/actions/admin/warnUser', () => ({
+  warnUser: vi.fn().mockResolvedValue({ success: true, data: {} }),
+}));
+
+vi.mock('@/actions/admin/suspendUser', () => ({
+  suspendUser: vi.fn().mockResolvedValue({ success: true, data: {} }),
 }));
 
 vi.mock('sonner', () => ({
