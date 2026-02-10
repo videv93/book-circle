@@ -10,7 +10,7 @@ import type { ActionResult, UserBookWithBook } from './types';
 // Input validation schema
 const addToLibrarySchema = z.object({
   title: z.string().min(1, 'Title is required'),
-  authors: z.array(z.string()).min(1, 'At least one author is required'),
+  authors: z.array(z.string().optional()),
   isbn10: z.string().optional(),
   isbn13: z.string().optional(),
   coverUrl: z.string().url().optional().or(z.literal('')),
@@ -136,10 +136,10 @@ export async function addToLibrary(
 
     return { success: true, data: userBook };
   } catch (error) {
+    console.error('Failed to add book to library:', error);
     if (error instanceof z.ZodError) {
       return { success: false, error: 'Invalid book data' };
     }
-    console.error('Failed to add book to library:', error);
     return { success: false, error: 'Failed to add book to library' };
   }
 }

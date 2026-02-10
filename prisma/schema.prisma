@@ -174,7 +174,7 @@ model Book {
   isbn10        String?    @unique @map("isbn_10")
   isbn13        String?    @unique @map("isbn_13")
   title         String
-  author        String
+  author        String?
   coverUrl      String?    @map("cover_url")
   pageCount     Int?       @map("page_count")
   publishedYear Int?       @map("published_year")

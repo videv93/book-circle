@@ -153,6 +153,7 @@ model User {
 ```
 
 **File Organization (from Architecture):**
+
 ```
 src/
 ├── actions/
@@ -182,6 +183,7 @@ src/
 ```
 
 **Import Alias Enforcement:**
+
 ```typescript
 // ALWAYS use @/* for cross-boundary imports
 import { addToLibrary } from '@/actions/books';
@@ -198,14 +200,14 @@ import { ReadingStatusSelector } from './ReadingStatusSelector';
 ### Server Action Pattern - CRITICAL
 
 **ActionResult Type (from Architecture):**
+
 ```typescript
 // src/types/api.ts - This pattern MUST be followed
-type ActionResult<T> =
-  | { success: true; data: T }
-  | { success: false; error: string };
+type ActionResult<T> = { success: true; data: T } | { success: false; error: string };
 ```
 
 **addToLibrary Server Action:**
+
 ```typescript
 // src/actions/books/addToLibrary.ts
 'use server';
@@ -257,8 +259,8 @@ export async function addToLibrary(
     const bookWhere = validated.isbn13
       ? { isbn13: validated.isbn13 }
       : validated.isbn10
-      ? { isbn10: validated.isbn10 }
-      : undefined;
+        ? { isbn10: validated.isbn10 }
+        : undefined;
 
     let book: Book;
 
@@ -327,16 +329,17 @@ export async function addToLibrary(
 
     return { success: true, data: userBook };
   } catch (error) {
+    console.error('Failed to add book to library:', error);
     if (error instanceof z.ZodError) {
       return { success: false, error: 'Invalid book data' };
     }
-    console.error('Failed to add book to library:', error);
     return { success: false, error: 'Failed to add book to library' };
   }
 }
 ```
 
 **getUserBookStatus Server Action:**
+
 ```typescript
 // src/actions/books/getUserBookStatus.ts
 'use server';
@@ -354,9 +357,7 @@ export interface UserBookStatus {
   userBook?: UserBook & { book: Book };
 }
 
-export async function getUserBookStatus(
-  isbn: string
-): Promise<ActionResult<UserBookStatus>> {
+export async function getUserBookStatus(isbn: string): Promise<ActionResult<UserBookStatus>> {
   try {
     const session = await auth.api.getSession({
       headers: await headers(),
@@ -369,10 +370,7 @@ export async function getUserBookStatus(
     // Find book by ISBN
     const book = await prisma.book.findFirst({
       where: {
-        OR: [
-          { isbn10: isbn },
-          { isbn13: isbn },
-        ],
+        OR: [{ isbn10: isbn }, { isbn13: isbn }],
       },
     });
 
@@ -416,6 +414,7 @@ export async function getUserBookStatus(
 ### UI/UX Specifications (from UX Design Spec)
 
 **Reading Status Labels (User-Friendly):**
+
 ```typescript
 export const READING_STATUS_LABELS: Record<ReadingStatus, string> = {
   CURRENTLY_READING: 'Currently Reading',
@@ -431,6 +430,7 @@ export const READING_STATUS_ICONS: Record<ReadingStatus, LucideIcon> = {
 ```
 
 **AddToLibraryButton Component:**
+
 ```typescript
 // src/components/features/books/AddToLibraryButton.tsx
 'use client';
@@ -560,6 +560,7 @@ export function AddToLibraryButton({
 ```
 
 **Updated BookSearchResult with Add Button:**
+
 ```typescript
 // src/components/features/books/BookSearchResult.tsx - ADD these changes
 import { AddToLibraryButton } from './AddToLibraryButton';
@@ -612,6 +613,7 @@ export function BookSearchResult({
 ```
 
 **Toast Pattern (from UX Design Spec):**
+
 ```typescript
 // Success toast for adding book
 toast.success(`Added to ${statusLabel}`, {
@@ -630,6 +632,7 @@ toast.error('Failed to add book', {
 ### Optimistic UI Pattern - CRITICAL
 
 **useUserLibrary Hook with Optimistic Updates:**
+
 ```typescript
 // src/hooks/useUserLibrary.ts
 'use client';
@@ -660,19 +663,13 @@ export function useUserLibrary(): UseUserLibraryReturn {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const isInLibrary = useCallback(
-    (isbn: string) => libraryBooks.has(isbn),
-    [libraryBooks]
-  );
+  const isInLibrary = useCallback((isbn: string) => libraryBooks.has(isbn), [libraryBooks]);
 
-  const getStatus = useCallback(
-    (isbn: string) => libraryBooks.get(isbn)?.status,
-    [libraryBooks]
-  );
+  const getStatus = useCallback((isbn: string) => libraryBooks.get(isbn)?.status, [libraryBooks]);
 
   // Optimistic add - immediately update state
   const addOptimistic = useCallback((isbn: string, status: ReadingStatus) => {
-    setLibraryBooks((prev) => {
+    setLibraryBooks(prev => {
       const next = new Map(prev);
       next.set(isbn, {
         isbn,
@@ -685,7 +682,7 @@ export function useUserLibrary(): UseUserLibraryReturn {
 
   // Rollback on error
   const removeOptimistic = useCallback((isbn: string) => {
-    setLibraryBooks((prev) => {
+    setLibraryBooks(prev => {
       const next = new Map(prev);
       next.delete(isbn);
       return next;
@@ -696,7 +693,7 @@ export function useUserLibrary(): UseUserLibraryReturn {
   const checkBookStatus = useCallback(async (isbn: string) => {
     const result = await getUserBookStatus(isbn);
     if (result.success && result.data.isInLibrary && result.data.status) {
-      setLibraryBooks((prev) => {
+      setLibraryBooks(prev => {
         const next = new Map(prev);
         next.set(isbn, {
           isbn,
@@ -724,6 +721,7 @@ export function useUserLibrary(): UseUserLibraryReturn {
 ### Previous Story Learnings - CRITICAL
 
 **From Story 2.1 (Book Search):**
+
 - Book search components exist in `src/components/features/books/`
 - `BookSearchResult.tsx` displays individual results - needs update for add button
 - `BookSearch.tsx` manages search state - needs to pass library status
@@ -732,17 +730,20 @@ export function useUserLibrary(): UseUserLibraryReturn {
 - Skeleton loading pattern established
 
 **From Story 1.4 (Profile Management):**
+
 - Toast notifications via sonner: `toast.success()`, `toast.error()`
 - Server action pattern with `ActionResult<T>` type
 - Zod schemas for validation
 - Feature components use `types.ts` + `index.ts` pattern
 
 **From Story 1.5 (Bottom Navigation):**
+
 - Layout components in `src/components/layout/`
 - Library tab exists in bottom nav (will be updated in future story)
 - Framer Motion helpers in `src/lib/motion.ts`
 
 **Existing Code to Reference:**
+
 - `src/services/books/types.ts` - BookSearchResult type
 - `src/components/features/books/BookSearchResult.tsx` - Current component
 - `src/actions/profile/updateProfile.ts` - Server action pattern
@@ -751,6 +752,7 @@ export function useUserLibrary(): UseUserLibraryReturn {
 ### Git Intelligence Summary
 
 **Recent Commits:**
+
 ```
 afabb56 feat: Implement book search via external APIs (Story 2.1)
 928eb9d fix: Configure Google OAuth image support
@@ -758,6 +760,7 @@ afabb56 feat: Implement book search via external APIs (Story 2.1)
 ```
 
 **Patterns Established:**
+
 - Feature commits with `feat:` prefix
 - Story reference in commit message
 - Co-located test files with `.test.tsx` extension
@@ -766,6 +769,7 @@ afabb56 feat: Implement book search via external APIs (Story 2.1)
 ### Testing Strategy
 
 **Unit Tests (Vitest + React Testing Library):**
+
 - `addToLibrary` action: validates input, creates book, creates userBook
 - `getUserBookStatus` action: returns correct status, handles missing books
 - `AddToLibraryButton`: renders states (not in library, in library)
@@ -773,12 +777,14 @@ afabb56 feat: Implement book search via external APIs (Story 2.1)
 - `useUserLibrary` hook: optimistic updates, rollback
 
 **Integration Tests:**
+
 - Search result shows "Add" button for new books
 - Search result shows checkmark for library books
 - Clicking status adds book and shows toast
 - Error handling rolls back optimistic update
 
 **Manual Testing Checklist:**
+
 - [ ] Search for a book and see "Add to Library" button
 - [ ] Click button and see status dropdown
 - [ ] Select "Currently Reading" and see success toast
@@ -791,6 +797,7 @@ afabb56 feat: Implement book search via external APIs (Story 2.1)
 ### Dependencies
 
 **Already Installed:**
+
 - `@prisma/client` - Database ORM
 - `zod` - Validation
 - `sonner` - Toast notifications
@@ -804,16 +811,19 @@ afabb56 feat: Implement book search via external APIs (Story 2.1)
 **CRITICAL: This is the first story adding Book/UserBook tables**
 
 Migration command:
+
 ```bash
 npx prisma migrate dev --name add_books_and_user_books
 ```
 
 After migration:
+
 ```bash
 npx prisma generate
 ```
 
 Verify the migration:
+
 ```bash
 npx prisma studio
 ```
@@ -821,6 +831,7 @@ npx prisma studio
 ### Error Handling - CRITICAL
 
 **Server Action Errors:**
+
 ```typescript
 // Validation error
 if (error instanceof z.ZodError) {
@@ -842,6 +853,7 @@ return { success: false, error: 'Failed to add book to library' };
 ```
 
 **Client-Side Error Handling:**
+
 ```typescript
 const result = await addToLibrary(input);
 
@@ -858,6 +870,7 @@ if (result.success) {
 ### Project Structure Notes
 
 **Alignment with Architecture:**
+
 - Server actions in `src/actions/books/` (new folder)
 - Database schema follows Prisma conventions (snake_case in DB, camelCase in code)
 - Components follow feature folder pattern
@@ -865,6 +878,7 @@ if (result.success) {
 - Co-located tests with source files
 
 **This story creates foundation for:**
+
 - Story 2.3: Book Detail Page (shows library status)
 - Story 2.4: Update Reading Status (modifies UserBook)
 - Story 2.5: Remove Book from Library (deletes UserBook)
@@ -908,6 +922,7 @@ Claude Opus 4.5 (claude-opus-4-5-20251101)
 ### Code Review Fixes (2026-02-05)
 
 **Issues fixed by adversarial code review:**
+
 1. Added test for database error logging in `addToLibrary.test.ts`
 2. Fixed AC #3 - AddToLibraryButton now clickable when book is in library (enables "tap to view book")
 3. Removed duplicate type export in `src/actions/books/index.ts`
@@ -917,6 +932,7 @@ Claude Opus 4.5 (claude-opus-4-5-20251101)
 ### File List
 
 **Created:**
+
 - `prisma/migrations/20260205160500_add_books_and_user_books/migration.sql` - Database migration
 - `src/actions/books/types.ts` - Server action types
 - `src/actions/books/addToLibrary.ts` - Add to library server action
@@ -935,6 +951,7 @@ Claude Opus 4.5 (claude-opus-4-5-20251101)
 - `src/types/database.ts` - Database type re-exports
 
 **Modified:**
+
 - `prisma/schema.prisma` - Added ReadingStatus enum, Book model, UserBook model, User relation
 - `src/components/features/books/BookSearchResult.tsx` - Added AddToLibraryButton integration
 - `src/components/features/books/BookSearchResult.test.tsx` - Updated tests (19 tests)
@@ -945,4 +962,3 @@ Claude Opus 4.5 (claude-opus-4-5-20251101)
 - `src/types/index.ts` - Added database type exports
 - `package.json` - Updated dependencies (shadcn popover)
 - `package-lock.json` - Lock file updated
-
