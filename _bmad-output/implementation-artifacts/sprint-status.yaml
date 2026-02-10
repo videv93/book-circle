@@ -101,3 +101,17 @@ development_status:
   6-6-platform-health-metrics: review
   6-7-user-session-lookup: backlog
   epic-6-retrospective: optional
+
+  # Epic 7: Premium Schema & Book Limit Enforcement
+  epic-7: in-progress
+  7-1-premium-data-model-status-utility: review
+  7-2-book-limit-enforcement-free-users: backlog
+  7-3-upgrade-prompt-premium-ui-hints: backlog
+  epic-7-retrospective: optional
+
+  # Epic 8: Polar Payment & Premium Unlock
+  epic-8: backlog
+  8-1-polar-client-setup-checkout-session: backlog
+  8-2-webhook-handler-payment-processing: backlog
+  8-3-premium-unlock-flow-post-payment: backlog
+  epic-8-retrospective: optional

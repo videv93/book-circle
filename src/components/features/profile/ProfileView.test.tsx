@@ -81,6 +81,8 @@ describe('ProfileView', () => {
     lastActivityViewedAt: null,
     suspendedUntil: null,
     suspensionReason: null,
+    premiumStatus: 'FREE',
+    polarCustomerId: null,
     createdAt: new Date('2024-01-15'),
     updatedAt: new Date('2024-01-15'),
   };

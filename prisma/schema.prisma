@@ -85,6 +85,20 @@ enum ReadingStatus {
   WANT_TO_READ
 }
 
+// Premium status for User monetization
+enum PremiumStatus {
+  FREE
+  PREMIUM
+}
+
+// Payment status for Payment records
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
 model User {
   id                  String    @id @default(cuid())
   email               String    @unique
@@ -101,9 +115,11 @@ model User {
   lastActivityViewedAt DateTime? @map("last_activity_viewed_at")
   bioRemovedAt        DateTime? @map("bio_removed_at")
   suspendedUntil      DateTime? @map("suspended_until")
-  suspensionReason    String?   @map("suspension_reason")
-  createdAt           DateTime  @default(now()) @map("created_at")
-  updatedAt           DateTime  @updatedAt @map("updated_at")
+  suspensionReason    String?       @map("suspension_reason")
+  premiumStatus       PremiumStatus @default(FREE) @map("premium_status")
+  polarCustomerId     String?       @map("polar_customer_id")
+  createdAt           DateTime      @default(now()) @map("created_at")
+  updatedAt           DateTime      @updatedAt @map("updated_at")
 
   sessions        Session[]
   accounts        Account[]
@@ -129,6 +145,7 @@ model User {
   suspensions        UserSuspension[]   @relation("user_suspensions")
   suspensionsIssued  UserSuspension[]   @relation("suspensions_issued")
   suspensionsLifted  UserSuspension[]   @relation("suspensions_lifted")
+  payments           Payment[]
 
   @@map("users")
 }
@@ -274,6 +291,24 @@ model UserBook {
   @@index([userId])
   @@index([bookId])
   @@map("user_books")
+}
+
+model Payment {
+  id              String        @id @default(cuid())
+  userId          String        @map("user_id")
+  polarCheckoutId String        @unique @map("polar_checkout_id")
+  amount          Decimal
+  currency        String        @default("USD")
+  status          PaymentStatus @default(PENDING)
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([polarCheckoutId])
+  @@index([createdAt])
+  @@map("payments")
 }
 
 model Follow {
