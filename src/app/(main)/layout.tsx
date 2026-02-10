@@ -2,6 +2,7 @@
 
 import { usePathname } from 'next/navigation';
 import { AppShell } from '@/components/layout';
+import { SuspensionGuard } from '@/components/features/admin/SuspensionGuard';
 
 // Page title mapping
 const PAGE_TITLES: Record<string, string> = {
@@ -41,5 +42,9 @@ export default function MainLayout({
   const pathname = usePathname();
   const title = getPageTitle(pathname);
 
-  return <AppShell title={title}>{children}</AppShell>;
+  return (
+    <SuspensionGuard>
+      <AppShell title={title}>{children}</AppShell>
+    </SuspensionGuard>
+  );
 }

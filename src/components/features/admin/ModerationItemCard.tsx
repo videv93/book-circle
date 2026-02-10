@@ -5,10 +5,13 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Textarea } from '@/components/ui/textarea';
+import Link from 'next/link';
 import { ChevronDown, ChevronUp, Flag, User, AlertTriangle } from 'lucide-react';
 import { reviewModerationItem } from '@/actions/admin/reviewModerationItem';
 import { restoreContent } from '@/actions/admin/restoreContent';
 import { RemoveContentDialog } from '@/components/features/admin/RemoveContentDialog';
+import { WarnUserDialog } from '@/components/features/admin/WarnUserDialog';
+import { SuspendUserDialog } from '@/components/features/admin/SuspendUserDialog';
 import { toast } from 'sonner';
 import type { ModerationQueueItem } from '@/actions/admin/getModerationQueue';
 
@@ -37,6 +40,8 @@ export function ModerationItemCard({ item, onActionComplete }: ModerationItemCar
   const [adminNotes, setAdminNotes] = useState('');
   const [loading, setLoading] = useState(false);
   const [removeDialogOpen, setRemoveDialogOpen] = useState(false);
+  const [warnDialogOpen, setWarnDialogOpen] = useState(false);
+  const [suspendDialogOpen, setSuspendDialogOpen] = useState(false);
 
   const isPending = item.status === 'PENDING';
   const isRemoved = item.status === 'REMOVED';
@@ -150,7 +155,13 @@ export function ModerationItemCard({ item, onActionComplete }: ModerationItemCar
                       {item.reportedUser.name?.[0] ?? '?'}
                     </AvatarFallback>
                   </Avatar>
-                  <span className="text-sm">{item.reportedUser.name ?? 'Unknown'}</span>
+                  <Link
+                    href={`/admin/users/${item.reportedUser.id}`}
+                    className="text-sm underline hover:text-primary"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {item.reportedUser.name ?? 'Unknown'}
+                  </Link>
                 </div>
               </div>
 
@@ -191,7 +202,7 @@ export function ModerationItemCard({ item, onActionComplete }: ModerationItemCar
                     <Button
                       variant="secondary"
                       size="sm"
-                      onClick={() => handleAction('warn')}
+                      onClick={() => setWarnDialogOpen(true)}
                       disabled={loading}
                       className="min-h-[44px] bg-amber-100 text-amber-800 hover:bg-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:hover:bg-amber-900/40"
                     >
@@ -209,7 +220,7 @@ export function ModerationItemCard({ item, onActionComplete }: ModerationItemCar
                     <Button
                       variant="destructive"
                       size="sm"
-                      onClick={() => handleAction('suspend')}
+                      onClick={() => setSuspendDialogOpen(true)}
                       disabled={loading}
                       className="min-h-[44px]"
                     >
@@ -240,6 +251,24 @@ export function ModerationItemCard({ item, onActionComplete }: ModerationItemCar
       <RemoveContentDialog
         open={removeDialogOpen}
         onOpenChange={setRemoveDialogOpen}
+        moderationItemId={item.id}
+        onSuccess={onActionComplete}
+      />
+
+      <WarnUserDialog
+        open={warnDialogOpen}
+        onOpenChange={setWarnDialogOpen}
+        userId={item.reportedUser.id}
+        userName={item.reportedUser.name ?? 'Unknown'}
+        moderationItemId={item.id}
+        onSuccess={onActionComplete}
+      />
+
+      <SuspendUserDialog
+        open={suspendDialogOpen}
+        onOpenChange={setSuspendDialogOpen}
+        userId={item.reportedUser.id}
+        userName={item.reportedUser.name ?? 'Unknown'}
         moderationItemId={item.id}
         onSuccess={onActionComplete}
       />

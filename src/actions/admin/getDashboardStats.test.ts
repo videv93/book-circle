@@ -14,6 +14,7 @@ vi.mock('@/lib/prisma', () => ({
     authorClaim: { count: vi.fn() },
     moderationItem: { count: vi.fn() },
     adminAction: { findMany: vi.fn() },
+    userWarning: { count: vi.fn() },
   },
 }));
 
@@ -32,6 +33,7 @@ const mockUserFindUnique = prisma.user.findUnique as unknown as ReturnType<typeo
 const mockClaimCount = (prisma as unknown as { authorClaim: { count: ReturnType<typeof vi.fn> } }).authorClaim.count;
 const mockModItemCount = (prisma as unknown as { moderationItem: { count: ReturnType<typeof vi.fn> } }).moderationItem.count;
 const mockActionFindMany = (prisma as unknown as { adminAction: { findMany: ReturnType<typeof vi.fn> } }).adminAction.findMany;
+const mockWarningCount = (prisma as unknown as { userWarning: { count: ReturnType<typeof vi.fn> } }).userWarning.count;
 
 describe('getDashboardStats', () => {
   beforeEach(() => {
@@ -43,6 +45,7 @@ describe('getDashboardStats', () => {
   it('returns dashboard stats with real moderation count', async () => {
     mockClaimCount.mockResolvedValue(3);
     mockModItemCount.mockResolvedValue(5);
+    mockWarningCount.mockResolvedValue(0);
     mockActionFindMany.mockResolvedValue([]);
 
     const result = await getDashboardStats();
@@ -61,6 +64,7 @@ describe('getDashboardStats', () => {
   it('queries moderation items with PENDING status', async () => {
     mockClaimCount.mockResolvedValue(0);
     mockModItemCount.mockResolvedValue(0);
+    mockWarningCount.mockResolvedValue(0);
     mockActionFindMany.mockResolvedValue([]);
 
     await getDashboardStats();

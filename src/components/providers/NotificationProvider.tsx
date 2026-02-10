@@ -95,6 +95,32 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
           toast('Your content has been restored.', { duration: 6000 });
         }
       );
+
+      channel.bind(
+        'moderation:user-warned',
+        (data: { warningType: string; message: string }) => {
+          const typeLabel = data.warningType === 'FINAL_WARNING' ? 'Final Warning' : 'Warning';
+          toast(`${typeLabel}: ${data.message}`, { duration: 8000 });
+          // Refresh the page to show the warning banner
+          router.refresh();
+        }
+      );
+
+      channel.bind(
+        'moderation:user-suspended',
+        () => {
+          toast('Your account has been suspended.', { duration: 6000 });
+          // Redirect to suspended page
+          window.location.assign('/suspended');
+        }
+      );
+
+      channel.bind(
+        'moderation:suspension-lifted',
+        () => {
+          toast('Your suspension has been lifted.', { duration: 6000 });
+        }
+      );
     } catch (error) {
       console.error('Pusher subscription error:', error);
     }
@@ -108,6 +134,9 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
           channelRef.current?.unbind('author:claim-rejected');
           channelRef.current?.unbind('moderation:content-removed');
           channelRef.current?.unbind('moderation:content-restored');
+          channelRef.current?.unbind('moderation:user-warned');
+          channelRef.current?.unbind('moderation:user-suspended');
+          channelRef.current?.unbind('moderation:suspension-lifted');
           pusher.unsubscribe(`private-user-${userId}`);
         } catch (error) {
           console.error('Pusher cleanup error:', error);

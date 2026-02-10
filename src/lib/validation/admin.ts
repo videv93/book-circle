@@ -58,3 +58,40 @@ export const restoreContentSchema = z.object({
 });
 
 export type RestoreContentInput = z.infer<typeof restoreContentSchema>;
+
+// Warning & Suspension schemas
+
+export const warningTypeEnum = z.enum(['FIRST_WARNING', 'FINAL_WARNING']);
+
+export const suspensionDurationEnum = z.enum(['HOURS_24', 'DAYS_7', 'DAYS_30', 'PERMANENT']);
+
+export const warnUserSchema = z.object({
+  userId: z.string().min(1, 'User ID is required'),
+  warningType: warningTypeEnum,
+  message: z.string().min(10, 'Message must be at least 10 characters').max(1000, 'Message must be at most 1000 characters'),
+  moderationItemId: z.string().min(1).optional(),
+});
+
+export type WarnUserInput = z.infer<typeof warnUserSchema>;
+
+export const suspendUserSchema = z.object({
+  userId: z.string().min(1, 'User ID is required'),
+  duration: suspensionDurationEnum,
+  reason: z.string().min(10, 'Reason must be at least 10 characters').max(1000, 'Reason must be at most 1000 characters'),
+  moderationItemId: z.string().min(1).optional(),
+});
+
+export type SuspendUserInput = z.infer<typeof suspendUserSchema>;
+
+export const liftSuspensionSchema = z.object({
+  userId: z.string().min(1, 'User ID is required'),
+  reason: z.string().max(1000).optional(),
+});
+
+export type LiftSuspensionInput = z.infer<typeof liftSuspensionSchema>;
+
+export const acknowledgeWarningSchema = z.object({
+  warningId: z.string().min(1, 'Warning ID is required'),
+});
+
+export type AcknowledgeWarningInput = z.infer<typeof acknowledgeWarningSchema>;

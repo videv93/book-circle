@@ -47,6 +47,20 @@ enum ContentType {
   READING_ROOM_DESCRIPTION
 }
 
+// Warning type for UserWarning
+enum WarningType {
+  FIRST_WARNING
+  FINAL_WARNING
+}
+
+// Suspension duration for UserSuspension
+enum SuspensionDuration {
+  HOURS_24
+  DAYS_7
+  DAYS_30
+  PERMANENT
+}
+
 // Violation type for ContentRemoval
 enum ViolationType {
   SPAM
@@ -78,6 +92,8 @@ model User {
   role                UserRole  @default(USER)
   lastActivityViewedAt DateTime? @map("last_activity_viewed_at")
   bioRemovedAt        DateTime? @map("bio_removed_at")
+  suspendedUntil      DateTime? @map("suspended_until")
+  suspensionReason    String?   @map("suspension_reason")
   createdAt           DateTime  @default(now()) @map("created_at")
   updatedAt           DateTime  @updatedAt @map("updated_at")
 
@@ -100,6 +116,11 @@ model User {
   moderationReviews  ModerationItem[]   @relation("moderation_reviews")
   removalsPerformed  ContentRemoval[]   @relation("removals_performed")
   restoresPerformed  ContentRemoval[]   @relation("restores_performed")
+  warnings           UserWarning[]      @relation("user_warnings")
+  warningsIssued     UserWarning[]      @relation("warnings_issued")
+  suspensions        UserSuspension[]   @relation("user_suspensions")
+  suspensionsIssued  UserSuspension[]   @relation("suspensions_issued")
+  suspensionsLifted  UserSuspension[]   @relation("suspensions_lifted")
 
   @@map("users")
 }
@@ -343,6 +364,8 @@ model ModerationItem {
   reportedUser   User             @relation("reports_received", fields: [reportedUserId], references: [id], onDelete: Cascade)
   reviewer       User?            @relation("moderation_reviews", fields: [reviewedById], references: [id])
   contentRemoval ContentRemoval?
+  userWarnings   UserWarning[]
+  userSuspensions UserSuspension[]
 
   @@unique([reporterId, contentType, contentId])
   @@index([status])
@@ -388,4 +411,47 @@ model ContentRemoval {
   @@index([removedById])
   @@index([removedAt])
   @@map("content_removals")
+}
+
+model UserWarning {
+  id               String          @id @default(cuid())
+  userId           String          @map("user_id")
+  issuedById       String          @map("issued_by_id")
+  warningType      WarningType     @map("warning_type")
+  message          String
+  moderationItemId String?         @map("moderation_item_id")
+  acknowledgedAt   DateTime?       @map("acknowledged_at")
+  createdAt        DateTime        @default(now()) @map("created_at")
+
+  user           User            @relation("user_warnings", fields: [userId], references: [id], onDelete: Cascade)
+  issuedBy       User            @relation("warnings_issued", fields: [issuedById], references: [id])
+  moderationItem ModerationItem? @relation(fields: [moderationItemId], references: [id])
+
+  @@index([userId])
+  @@index([userId, acknowledgedAt])
+  @@index([createdAt])
+  @@map("user_warnings")
+}
+
+model UserSuspension {
+  id               String             @id @default(cuid())
+  userId           String             @map("user_id")
+  issuedById       String             @map("issued_by_id")
+  reason           String
+  duration         SuspensionDuration
+  suspendedUntil   DateTime           @map("suspended_until")
+  liftedAt         DateTime?          @map("lifted_at")
+  liftedById       String?            @map("lifted_by_id")
+  moderationItemId String?            @map("moderation_item_id")
+  createdAt        DateTime           @default(now()) @map("created_at")
+
+  user           User            @relation("user_suspensions", fields: [userId], references: [id], onDelete: Cascade)
+  issuedBy       User            @relation("suspensions_issued", fields: [issuedById], references: [id])
+  liftedBy       User?           @relation("suspensions_lifted", fields: [liftedById], references: [id])
+  moderationItem ModerationItem? @relation(fields: [moderationItemId], references: [id])
+
+  @@index([userId])
+  @@index([suspendedUntil])
+  @@index([createdAt])
+  @@map("user_suspensions")
 }
