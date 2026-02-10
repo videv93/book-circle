@@ -37,14 +37,11 @@ export default async function ActivityPage() {
   return (
     <main className="container mx-auto px-4 py-8 max-w-2xl">
       <ActivityPageEffect />
-      <PageHeader title="Activity" />
-      <div className="mt-6">
-        <ActivityFeed
-          initialActivities={activities}
-          initialTotal={total}
-          hasFollows={hasFollows}
-        />
-      </div>
+      <ActivityFeed
+        initialActivities={activities}
+        initialTotal={total}
+        hasFollows={hasFollows}
+      />
     </main>
   );
 }
