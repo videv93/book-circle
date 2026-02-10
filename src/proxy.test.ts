@@ -2,19 +2,20 @@ import { describe, it, expect, vi } from 'vitest';
 import { NextRequest } from 'next/server';
 import { proxy } from './proxy';
 
+vi.mock('better-auth/cookies', () => ({
+  getSessionCookie: vi.fn(),
+}));
+
+import { getSessionCookie } from 'better-auth/cookies';
+const mockGetSessionCookie = vi.mocked(getSessionCookie);
+
 describe('proxy', () => {
   function createMockRequest(pathname: string, cookies: Record<string, string> = {}) {
     const url = `http://localhost:3000${pathname}`;
     const request = new NextRequest(url);
 
-    // Mock cookies
-    vi.spyOn(request.cookies, 'get').mockImplementation((nameOrCookie) => {
-      const name = typeof nameOrCookie === 'string' ? nameOrCookie : nameOrCookie.name;
-      if (cookies[name]) {
-        return { name, value: cookies[name] };
-      }
-      return undefined;
-    });
+    const hasSession = !!cookies['better-auth.session_token'];
+    mockGetSessionCookie.mockReturnValueOnce(hasSession ? 'valid-token' : null);
 
     return request;
   }
