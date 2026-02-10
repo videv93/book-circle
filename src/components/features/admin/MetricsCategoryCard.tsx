@@ -1,6 +1,6 @@
 'use client';
 
-import { type LucideIcon } from 'lucide-react';
+import { Users, BookOpen, Heart, Library } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { SparklineChart } from '@/components/features/admin/SparklineChart';
 import { TrendIndicator } from '@/components/features/admin/TrendIndicator';
@@ -13,19 +13,29 @@ export interface MetricRow {
   trend?: MetricTrend;
 }
 
+const iconMap = {
+  users: Users,
+  bookOpen: BookOpen,
+  heart: Heart,
+  library: Library,
+} as const;
+
+export type IconName = keyof typeof iconMap;
+
 interface MetricsCategoryCardProps {
   title: string;
-  icon: LucideIcon;
+  icon: IconName;
   metrics: MetricRow[];
   className?: string;
 }
 
 export function MetricsCategoryCard({
   title,
-  icon: Icon,
+  icon,
   metrics,
   className,
 }: MetricsCategoryCardProps) {
+  const Icon = iconMap[icon];
   return (
     <Card className={className}>
       <CardContent className="p-4">

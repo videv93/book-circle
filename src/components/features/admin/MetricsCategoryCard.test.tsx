@@ -1,14 +1,13 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { MetricsCategoryCard } from './MetricsCategoryCard';
-import { Users } from 'lucide-react';
 
 describe('MetricsCategoryCard', () => {
   it('renders category title', () => {
     render(
       <MetricsCategoryCard
         title="Users"
-        icon={Users}
+        icon="users"
         metrics={[{ label: 'Total Users', value: 1000 }]}
       />,
     );
@@ -19,7 +18,7 @@ describe('MetricsCategoryCard', () => {
     render(
       <MetricsCategoryCard
         title="Users"
-        icon={Users}
+        icon="users"
         metrics={[
           { label: 'Total Users', value: 1000 },
           { label: 'New Today', value: 5 },
@@ -39,7 +38,7 @@ describe('MetricsCategoryCard', () => {
     render(
       <MetricsCategoryCard
         title="Engagement"
-        icon={Users}
+        icon="bookOpen"
         metrics={[{ label: 'Reading Time', value: '100.5h' }]}
       />,
     );
@@ -50,7 +49,7 @@ describe('MetricsCategoryCard', () => {
     render(
       <MetricsCategoryCard
         title="Users"
-        icon={Users}
+        icon="users"
         metrics={[
           {
             label: 'Total Users',
@@ -74,7 +73,7 @@ describe('MetricsCategoryCard', () => {
     render(
       <MetricsCategoryCard
         title="Users"
-        icon={Users}
+        icon="users"
         metrics={[
           {
             label: 'Total Users',

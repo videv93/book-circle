@@ -1,4 +1,3 @@
-import { Users, BookOpen, Heart, Library } from 'lucide-react';
 import { getPlatformMetrics } from '@/actions/admin/getPlatformMetrics';
 import { getMetricsTrends } from '@/actions/admin/getMetricsTrends';
 import { MetricsCategoryCard } from '@/components/features/admin/MetricsCategoryCard';
@@ -65,10 +64,10 @@ export default async function MetricsPage() {
       <h2 className="text-xl font-semibold mb-6">Platform Health Metrics</h2>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-        <MetricsCategoryCard title="Users" icon={Users} metrics={userMetrics} />
-        <MetricsCategoryCard title="Engagement" icon={BookOpen} metrics={engagementMetrics} />
-        <MetricsCategoryCard title="Social" icon={Heart} metrics={socialMetrics} />
-        <MetricsCategoryCard title="Content" icon={Library} metrics={contentMetrics} />
+        <MetricsCategoryCard title="Users" icon="users" metrics={userMetrics} />
+        <MetricsCategoryCard title="Engagement" icon="bookOpen" metrics={engagementMetrics} />
+        <MetricsCategoryCard title="Social" icon="heart" metrics={socialMetrics} />
+        <MetricsCategoryCard title="Content" icon="library" metrics={contentMetrics} />
       </div>
 
       <MetricsBreakdownView />
