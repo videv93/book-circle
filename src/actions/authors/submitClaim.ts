@@ -19,28 +19,45 @@ export async function submitClaim(
       return { success: false, error: 'Unauthorized' };
     }
 
-    // Use transaction to prevent race conditions on check + delete + create
+    // Use transaction to prevent race conditions on check + create
     const claim = await prisma.$transaction(async (tx) => {
-      const existingClaim = await tx.authorClaim.findUnique({
+      // Check for active (PENDING or APPROVED) claims
+      const activeClaim = await tx.authorClaim.findFirst({
         where: {
-          userId_bookId: {
-            userId: session.user.id,
-            bookId: validated.bookId,
-          },
+          userId: session.user.id,
+          bookId: validated.bookId,
+          status: { in: ['PENDING', 'APPROVED'] },
         },
       });
 
-      if (existingClaim) {
-        if (existingClaim.status === 'PENDING') {
+      if (activeClaim) {
+        if (activeClaim.status === 'PENDING') {
           throw new Error('You already have a pending claim for this book');
         }
-        if (existingClaim.status === 'APPROVED') {
+        if (activeClaim.status === 'APPROVED') {
           throw new Error('You are already verified as the author of this book');
         }
-        // If REJECTED, allow re-submission by deleting the old claim
-        await tx.authorClaim.delete({
-          where: { id: existingClaim.id },
-        });
+      }
+
+      // Check 7-day cooldown for rejected claims (preserves audit trail)
+      const recentRejection = await tx.authorClaim.findFirst({
+        where: {
+          userId: session.user.id,
+          bookId: validated.bookId,
+          status: 'REJECTED',
+          reviewedAt: { not: null },
+        },
+        orderBy: { reviewedAt: 'desc' },
+      });
+
+      if (recentRejection && recentRejection.reviewedAt) {
+        const cooldownMs = 7 * 24 * 60 * 60 * 1000;
+        const resubmitDate = new Date(recentRejection.reviewedAt.getTime() + cooldownMs);
+        if (Date.now() < resubmitDate.getTime()) {
+          throw new Error(
+            `You can resubmit a claim after ${resubmitDate.toLocaleDateString()}. Please gather stronger evidence.`
+          );
+        }
       }
 
       return tx.authorClaim.create({
@@ -59,10 +76,11 @@ export async function submitClaim(
     if (error && typeof error === 'object' && 'issues' in error) {
       return { success: false, error: 'Invalid input' };
     }
-    // Transaction throws Error with user-facing messages for duplicate claims
+    // Transaction throws Error with user-facing messages for duplicate claims and cooldown
     if (error instanceof Error && (
       error.message.includes('pending claim') ||
-      error.message.includes('already verified')
+      error.message.includes('already verified') ||
+      error.message.includes('You can resubmit')
     )) {
       return { success: false, error: error.message };
     }

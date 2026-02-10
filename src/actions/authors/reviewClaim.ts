@@ -53,18 +53,28 @@ export async function reviewClaim(
           status: newStatus,
           reviewedById: session.user.id,
           reviewedAt: new Date(),
+          rejectionReason:
+            validated.decision === 'reject' ? validated.rejectionReason : null,
+          adminNotes: validated.adminNotes?.trim() || null,
         },
       }),
       prisma.adminAction.create({
         data: {
           adminId: session.user.id,
-          actionType: 'REVIEW_CLAIM',
+          actionType:
+            validated.decision === 'approve'
+              ? 'AUTHOR_CLAIM_APPROVED'
+              : 'AUTHOR_CLAIM_REJECTED',
           targetId: validated.claimId,
           targetType: 'AuthorClaim',
           details: {
             decision: validated.decision,
             bookTitle: claim.book.title,
             claimUserId: claim.userId,
+            ...(validated.decision === 'reject' && {
+              rejectionReason: validated.rejectionReason,
+              adminNotes: validated.adminNotes?.trim() || undefined,
+            }),
           },
         },
       }),
@@ -81,6 +91,9 @@ export async function reviewClaim(
       await pusher?.trigger(`private-user-${claim.userId}`, eventName, {
         bookTitle: claim.book.title,
         claimId: claim.id,
+        ...(validated.decision === 'reject' && {
+          rejectionReason: validated.rejectionReason,
+        }),
       });
     } catch (pusherError) {
       console.error('Pusher trigger failed:', pusherError);

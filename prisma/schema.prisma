@@ -61,6 +61,14 @@ enum SuspensionDuration {
   PERMANENT
 }
 
+// Rejection reason for AuthorClaim
+enum RejectionReason {
+  INSUFFICIENT_EVIDENCE
+  NOT_THE_AUTHOR
+  DUPLICATE_CLAIM
+  OTHER
+}
+
 // Violation type for ContentRemoval
 enum ViolationType {
   SPAM
@@ -331,6 +339,8 @@ model AuthorClaim {
   verificationUrl    String?            @map("verification_url")
   verificationText   String?            @map("verification_text")
   status             ClaimStatus        @default(PENDING)
+  rejectionReason    RejectionReason?   @map("rejection_reason")
+  adminNotes         String?            @map("admin_notes")
   reviewedById       String?            @map("reviewed_by_id")
   reviewedAt         DateTime?          @map("reviewed_at")
   createdAt          DateTime           @default(now()) @map("created_at")
@@ -340,7 +350,7 @@ model AuthorClaim {
   reviewer           User?              @relation("reviewed_claims", fields: [reviewedById], references: [id])
   book               Book               @relation(fields: [bookId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, bookId])
+  @@index([userId, bookId])
   @@index([status])
   @@index([bookId])
   @@map("author_claims")

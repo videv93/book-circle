@@ -22,13 +22,12 @@ export async function getClaimStatus(
       return { success: true, data: { hasClaim: false } };
     }
 
-    const claim = await prisma.authorClaim.findUnique({
+    const claim = await prisma.authorClaim.findFirst({
       where: {
-        userId_bookId: {
-          userId: session.user.id,
-          bookId,
-        },
+        userId: session.user.id,
+        bookId,
       },
+      orderBy: { createdAt: 'desc' },
       select: {
         id: true,
         status: true,

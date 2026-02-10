@@ -1,17 +1,17 @@
 import { describe, it, expect, vi, beforeAll } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { AdminClaimReview } from './AdminClaimReview';
 import type { PendingClaimData } from '@/actions/authors/getPendingClaims';
 
-// Mock reviewClaim
-vi.mock('@/actions/authors/reviewClaim', () => ({
-  reviewClaim: vi.fn(),
+const mockPush = vi.fn();
+
+vi.mock('next/navigation', () => ({
+  useRouter: vi.fn(() => ({
+    push: mockPush,
+    refresh: vi.fn(),
+  })),
 }));
-
-import { reviewClaim } from '@/actions/authors/reviewClaim';
-
-const mockReviewClaim = reviewClaim as ReturnType<typeof vi.fn>;
 
 // Mock matchMedia
 beforeAll(() => {
@@ -72,6 +72,10 @@ const mockClaims: PendingClaimData[] = [
 ];
 
 describe('AdminClaimReview', () => {
+  beforeAll(() => {
+    mockPush.mockClear();
+  });
+
   it('renders empty state when no claims', () => {
     render(<AdminClaimReview claims={[]} />);
 
@@ -88,6 +92,12 @@ describe('AdminClaimReview', () => {
     expect(screen.getByText('Jane Writer')).toBeInTheDocument();
   });
 
+  it('displays pending count badge', () => {
+    render(<AdminClaimReview claims={mockClaims} />);
+
+    expect(screen.getByTestId('pending-count-badge')).toHaveTextContent('2');
+  });
+
   it('displays claim details correctly', () => {
     render(<AdminClaimReview claims={mockClaims} />);
 
@@ -98,30 +108,23 @@ describe('AdminClaimReview', () => {
     ).toBeInTheDocument();
   });
 
-  it('removes claim from list after approval', async () => {
+  it('navigates to detail page on card click', async () => {
     const user = userEvent.setup();
-    mockReviewClaim.mockResolvedValue({ success: true, data: { id: 'claim-1' } });
-
     render(<AdminClaimReview claims={mockClaims} />);
 
-    await user.click(screen.getByTestId('approve-claim-1'));
+    await user.click(screen.getByTestId('claim-card-claim-1'));
 
-    await waitFor(() => {
-      expect(screen.queryByText('John Author')).not.toBeInTheDocument();
-    });
-    expect(screen.getByText('1 pending claim')).toBeInTheDocument();
+    expect(mockPush).toHaveBeenCalledWith('/admin/claims/claim-1');
   });
 
-  it('removes claim from list after rejection', async () => {
+  it('navigates to detail page on Enter key', async () => {
     const user = userEvent.setup();
-    mockReviewClaim.mockResolvedValue({ success: true, data: { id: 'claim-2' } });
-
     render(<AdminClaimReview claims={mockClaims} />);
 
-    await user.click(screen.getByTestId('reject-claim-2'));
+    const card = screen.getByTestId('claim-card-claim-2');
+    card.focus();
+    await user.keyboard('{Enter}');
 
-    await waitFor(() => {
-      expect(screen.queryByText('Jane Writer')).not.toBeInTheDocument();
-    });
+    expect(mockPush).toHaveBeenCalledWith('/admin/claims/claim-2');
   });
 });

@@ -1,45 +1,24 @@
 'use client';
 
-import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { Check, X, ExternalLink, Loader2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { ExternalLink } from 'lucide-react';
 import {
   Card,
   CardHeader,
   CardTitle,
   CardDescription,
   CardContent,
-  CardFooter,
 } from '@/components/ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { reviewClaim } from '@/actions/authors/reviewClaim';
 import type { PendingClaimData } from '@/actions/authors/getPendingClaims';
 
 interface AdminClaimReviewProps {
   claims: PendingClaimData[];
 }
 
-export function AdminClaimReview({ claims: initialClaims }: AdminClaimReviewProps) {
-  const [claims, setClaims] = useState(initialClaims);
-  const [loadingId, setLoadingId] = useState<string | null>(null);
-  const [errorId, setErrorId] = useState<string | null>(null);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-
-  const handleReview = async (claimId: string, decision: 'approve' | 'reject') => {
-    setLoadingId(claimId);
-    setErrorId(null);
-    setErrorMessage(null);
-    const result = await reviewClaim({ claimId, decision });
-
-    if (result.success) {
-      setClaims((prev) => prev.filter((c) => c.id !== claimId));
-    } else {
-      setErrorId(claimId);
-      setErrorMessage(result.error);
-    }
-    setLoadingId(null);
-  };
+export function AdminClaimReview({ claims }: AdminClaimReviewProps) {
+  const router = useRouter();
 
   if (claims.length === 0) {
     return (
@@ -52,12 +31,33 @@ export function AdminClaimReview({ claims: initialClaims }: AdminClaimReviewProp
 
   return (
     <div className="flex flex-col gap-4" data-testid="admin-claim-list">
-      <p className="text-sm text-muted-foreground">
-        {claims.length} pending claim{claims.length !== 1 ? 's' : ''}
-      </p>
+      <div className="flex items-center gap-2">
+        <p className="text-sm text-muted-foreground">
+          {claims.length} pending claim{claims.length !== 1 ? 's' : ''}
+        </p>
+        <span
+          className="inline-flex items-center justify-center rounded-full bg-amber-100 text-amber-800 px-2 py-0.5 text-xs font-medium"
+          data-testid="pending-count-badge"
+        >
+          {claims.length}
+        </span>
+      </div>
 
       {claims.map((claim) => (
-        <Card key={claim.id} data-testid={`claim-card-${claim.id}`}>
+        <Card
+          key={claim.id}
+          data-testid={`claim-card-${claim.id}`}
+          className="cursor-pointer hover:border-foreground/20 transition-colors"
+          onClick={() => router.push(`/admin/claims/${claim.id}`)}
+          role="link"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              router.push(`/admin/claims/${claim.id}`);
+            }
+          }}
+        >
           <CardHeader>
             <div className="flex items-center gap-3">
               <Avatar className="h-10 w-10">
@@ -107,6 +107,8 @@ export function AdminClaimReview({ claims: initialClaims }: AdminClaimReviewProp
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-primary underline underline-offset-2 inline-flex items-center gap-1"
+                    onClick={(e) => e.stopPropagation()}
+                    data-testid={`claim-url-${claim.id}`}
                   >
                     {claim.verificationUrl}
                     <ExternalLink className="h-3 w-3" />
@@ -126,48 +128,6 @@ export function AdminClaimReview({ claims: initialClaims }: AdminClaimReviewProp
               </p>
             </div>
           </CardContent>
-
-          {errorId === claim.id && errorMessage && (
-            <div className="px-6 pb-2">
-              <p className="text-sm text-destructive" role="alert" data-testid={`error-${claim.id}`}>
-                {errorMessage}
-              </p>
-            </div>
-          )}
-
-          <CardFooter className="gap-2">
-            <Button
-              onClick={() => handleReview(claim.id, 'approve')}
-              disabled={loadingId === claim.id}
-              className="flex-1 min-h-[44px]"
-              data-testid={`approve-${claim.id}`}
-            >
-              {loadingId === claim.id ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <>
-                  <Check className="mr-1 h-4 w-4" />
-                  Approve
-                </>
-              )}
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => handleReview(claim.id, 'reject')}
-              disabled={loadingId === claim.id}
-              className="flex-1 min-h-[44px]"
-              data-testid={`reject-${claim.id}`}
-            >
-              {loadingId === claim.id ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <>
-                  <X className="mr-1 h-4 w-4" />
-                  Reject
-                </>
-              )}
-            </Button>
-          </CardFooter>
         </Card>
       ))}
     </div>

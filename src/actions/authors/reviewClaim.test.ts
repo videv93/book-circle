@@ -47,6 +47,8 @@ import { prisma } from '@/lib/prisma';
 const mockGetSession = auth.api.getSession as unknown as ReturnType<typeof vi.fn>;
 const mockUserFindUnique = prisma.user.findUnique as unknown as ReturnType<typeof vi.fn>;
 const mockClaimFindUnique = prisma.authorClaim.findUnique as unknown as ReturnType<typeof vi.fn>;
+const mockClaimUpdate = prisma.authorClaim.update as unknown as ReturnType<typeof vi.fn>;
+const mockAdminActionCreate = prisma.adminAction.create as unknown as ReturnType<typeof vi.fn>;
 const mockTransaction = prisma.$transaction as unknown as ReturnType<typeof vi.fn>;
 
 describe('reviewClaim', () => {
@@ -115,6 +117,7 @@ describe('reviewClaim', () => {
     const result = await reviewClaim({
       claimId: 'claim-1',
       decision: 'reject',
+      rejectionReason: 'NOT_THE_AUTHOR',
     });
 
     expect(result).toEqual({
@@ -146,9 +149,25 @@ describe('reviewClaim', () => {
 
     expect(result).toEqual({ success: true, data: updatedClaim });
     expect(mockTransaction).toHaveBeenCalled();
+    expect(mockClaimUpdate).toHaveBeenCalledWith({
+      where: { id: 'claim-1' },
+      data: expect.objectContaining({
+        status: 'APPROVED',
+        reviewedById: 'admin-1',
+        rejectionReason: null,
+      }),
+    });
+    expect(mockAdminActionCreate).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        adminId: 'admin-1',
+        actionType: 'AUTHOR_CLAIM_APPROVED',
+        targetId: 'claim-1',
+        targetType: 'AuthorClaim',
+      }),
+    });
   });
 
-  it('rejects a claim successfully', async () => {
+  it('rejects a claim with rejection reason', async () => {
     mockGetSession.mockResolvedValue({ user: { id: 'admin-1' } });
     mockUserFindUnique.mockResolvedValue({ id: 'admin-1', role: 'ADMIN' });
     mockClaimFindUnique.mockResolvedValue({
@@ -161,15 +180,91 @@ describe('reviewClaim', () => {
       id: 'claim-1',
       status: 'REJECTED',
       reviewedById: 'admin-1',
+      rejectionReason: 'INSUFFICIENT_EVIDENCE',
     };
     mockTransaction.mockResolvedValue([updatedClaim, {}]);
 
     const result = await reviewClaim({
       claimId: 'claim-1',
       decision: 'reject',
+      rejectionReason: 'INSUFFICIENT_EVIDENCE',
     });
 
     expect(result).toEqual({ success: true, data: updatedClaim });
+    expect(mockClaimUpdate).toHaveBeenCalledWith({
+      where: { id: 'claim-1' },
+      data: expect.objectContaining({
+        status: 'REJECTED',
+        reviewedById: 'admin-1',
+        rejectionReason: 'INSUFFICIENT_EVIDENCE',
+      }),
+    });
+    expect(mockAdminActionCreate).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        adminId: 'admin-1',
+        actionType: 'AUTHOR_CLAIM_REJECTED',
+        targetId: 'claim-1',
+        targetType: 'AuthorClaim',
+        details: expect.objectContaining({
+          rejectionReason: 'INSUFFICIENT_EVIDENCE',
+        }),
+      }),
+    });
+  });
+
+  it('rejects a claim with reason and admin notes', async () => {
+    mockGetSession.mockResolvedValue({ user: { id: 'admin-1' } });
+    mockUserFindUnique.mockResolvedValue({ id: 'admin-1', role: 'ADMIN' });
+    mockClaimFindUnique.mockResolvedValue({
+      id: 'claim-1',
+      status: 'PENDING',
+      userId: 'user-1',
+      book: { title: 'Test Book' },
+    });
+    const updatedClaim = {
+      id: 'claim-1',
+      status: 'REJECTED',
+      rejectionReason: 'NOT_THE_AUTHOR',
+      adminNotes: 'Evidence does not match',
+    };
+    mockTransaction.mockResolvedValue([updatedClaim, {}]);
+
+    const result = await reviewClaim({
+      claimId: 'claim-1',
+      decision: 'reject',
+      rejectionReason: 'NOT_THE_AUTHOR',
+      adminNotes: 'Evidence does not match',
+    });
+
+    expect(result).toEqual({ success: true, data: updatedClaim });
+    expect(mockClaimUpdate).toHaveBeenCalledWith({
+      where: { id: 'claim-1' },
+      data: expect.objectContaining({
+        status: 'REJECTED',
+        rejectionReason: 'NOT_THE_AUTHOR',
+        adminNotes: 'Evidence does not match',
+      }),
+    });
+    expect(mockAdminActionCreate).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        actionType: 'AUTHOR_CLAIM_REJECTED',
+        details: expect.objectContaining({
+          rejectionReason: 'NOT_THE_AUTHOR',
+          adminNotes: 'Evidence does not match',
+        }),
+      }),
+    });
+  });
+
+  it('returns error when rejecting without a reason', async () => {
+    mockGetSession.mockResolvedValue({ user: { id: 'admin-1' } });
+
+    const result = await reviewClaim({
+      claimId: 'claim-1',
+      decision: 'reject',
+    });
+
+    expect(result).toEqual({ success: false, error: 'Invalid input' });
   });
 
   it('returns error for invalid input', async () => {

@@ -64,10 +64,19 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
 
       channel.bind(
         'author:claim-rejected',
-        (data: { bookTitle: string; claimId: string }) => {
+        (data: { bookTitle: string; claimId: string; rejectionReason?: string }) => {
+          const reasonLabels: Record<string, string> = {
+            INSUFFICIENT_EVIDENCE: 'insufficient evidence',
+            NOT_THE_AUTHOR: 'unable to verify authorship',
+            DUPLICATE_CLAIM: 'duplicate claim',
+            OTHER: 'policy reasons',
+          };
+          const reasonText = data.rejectionReason
+            ? ` Reason: ${reasonLabels[data.rejectionReason] || data.rejectionReason.toLowerCase()}.`
+            : '';
           toast(
-            `Your author claim for ${data.bookTitle} was not approved.`,
-            { duration: 6000 }
+            `Your author claim for ${data.bookTitle} was not approved.${reasonText} You may resubmit after 7 days.`,
+            { duration: 8000 }
           );
         }
       );

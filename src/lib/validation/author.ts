@@ -45,9 +45,33 @@ export const submitClaimSchema = z
 
 export type SubmitClaimInput = z.infer<typeof submitClaimSchema>;
 
-export const reviewClaimSchema = z.object({
-  claimId: z.string().min(1, 'Claim ID is required'),
-  decision: z.enum(['approve', 'reject']),
-});
+export const rejectionReasonEnum = z.enum([
+  'INSUFFICIENT_EVIDENCE',
+  'NOT_THE_AUTHOR',
+  'DUPLICATE_CLAIM',
+  'OTHER',
+]);
+
+export type RejectionReasonType = z.infer<typeof rejectionReasonEnum>;
+
+export const reviewClaimSchema = z
+  .object({
+    claimId: z.string().min(1, 'Claim ID is required'),
+    decision: z.enum(['approve', 'reject']),
+    rejectionReason: rejectionReasonEnum.optional(),
+    adminNotes: z.string().max(500, 'Notes must be 500 characters or less').optional().or(z.literal('')),
+  })
+  .refine(
+    (data) => {
+      if (data.decision === 'reject') {
+        return !!data.rejectionReason;
+      }
+      return true;
+    },
+    {
+      message: 'Rejection reason is required when rejecting a claim',
+      path: ['rejectionReason'],
+    }
+  );
 
 export type ReviewClaimInput = z.infer<typeof reviewClaimSchema>;

@@ -15,7 +15,7 @@ vi.mock('@/lib/auth', () => ({
 vi.mock('@/lib/prisma', () => ({
   prisma: {
     authorClaim: {
-      findUnique: vi.fn(),
+      findFirst: vi.fn(),
     },
   },
 }));
@@ -25,7 +25,7 @@ import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 
 const mockGetSession = auth.api.getSession as unknown as ReturnType<typeof vi.fn>;
-const mockFindUnique = prisma.authorClaim.findUnique as unknown as ReturnType<typeof vi.fn>;
+const mockFindFirst = prisma.authorClaim.findFirst as unknown as ReturnType<typeof vi.fn>;
 
 describe('getClaimStatus', () => {
   beforeEach(() => {
@@ -42,22 +42,24 @@ describe('getClaimStatus', () => {
 
   it('returns hasClaim false when no claim exists', async () => {
     mockGetSession.mockResolvedValue({ user: { id: 'user-1' } });
-    mockFindUnique.mockResolvedValue(null);
+    mockFindFirst.mockResolvedValue(null);
 
     const result = await getClaimStatus('book-1');
 
     expect(result).toEqual({ success: true, data: { hasClaim: false } });
-    expect(mockFindUnique).toHaveBeenCalledWith({
+    expect(mockFindFirst).toHaveBeenCalledWith({
       where: {
-        userId_bookId: { userId: 'user-1', bookId: 'book-1' },
+        userId: 'user-1',
+        bookId: 'book-1',
       },
+      orderBy: { createdAt: 'desc' },
       select: { id: true, status: true },
     });
   });
 
   it('returns claim status when claim exists', async () => {
     mockGetSession.mockResolvedValue({ user: { id: 'user-1' } });
-    mockFindUnique.mockResolvedValue({ id: 'claim-1', status: 'PENDING' });
+    mockFindFirst.mockResolvedValue({ id: 'claim-1', status: 'PENDING' });
 
     const result = await getClaimStatus('book-1');
 
@@ -69,7 +71,7 @@ describe('getClaimStatus', () => {
 
   it('returns approved claim status', async () => {
     mockGetSession.mockResolvedValue({ user: { id: 'user-1' } });
-    mockFindUnique.mockResolvedValue({ id: 'claim-2', status: 'APPROVED' });
+    mockFindFirst.mockResolvedValue({ id: 'claim-2', status: 'APPROVED' });
 
     const result = await getClaimStatus('book-1');
 
@@ -81,7 +83,7 @@ describe('getClaimStatus', () => {
 
   it('returns error on database failure', async () => {
     mockGetSession.mockResolvedValue({ user: { id: 'user-1' } });
-    mockFindUnique.mockRejectedValue(new Error('DB error'));
+    mockFindFirst.mockRejectedValue(new Error('DB error'));
 
     const result = await getClaimStatus('book-1');
 
