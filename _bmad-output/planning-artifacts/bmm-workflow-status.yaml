@@ -34,7 +34,10 @@ workflow_status:
       - id: "research"
         status: "skipped"
       - id: "product-brief"
-        status: "skipped"
+        status: "_bmad-output/planning-artifacts/product-brief-flappy-bird-1-2026-02-11.md"
+        agent: "analyst"
+        command: "/bmad:bmm:workflows:create-product-brief"
+        note: "Completed 2026-02-11 - Book discussions + author chat feature brief"
 
   # Phase 2: Planning
   - phase: 2

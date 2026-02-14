@@ -35,6 +35,7 @@ export interface BookDetailData {
     userBookId: string;
   };
   authorVerified: boolean;
+  authorUserId?: string;
 }
 
 export async function getBookById(
@@ -142,6 +143,7 @@ export async function getBookById(
         },
         userStatus,
         authorVerified: !!approvedClaim,
+        authorUserId: approvedClaim?.userId,
       },
     };
   } catch (error) {

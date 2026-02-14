@@ -146,6 +146,7 @@ model User {
   suspensionsIssued  UserSuspension[]   @relation("suspensions_issued")
   suspensionsLifted  UserSuspension[]   @relation("suspensions_lifted")
   payments           Payment[]
+  affiliateClicks    AffiliateClick[]
 
   @@map("users")
 }
@@ -211,6 +212,7 @@ model Book {
   readingSessions ReadingSession[]
   roomPresences   RoomPresence[]
   authorClaims    AuthorClaim[]
+  affiliateLinks  AffiliateLink[]
 
   @@index([isbn10])
   @@index([isbn13])
@@ -498,4 +500,42 @@ model UserSuspension {
   @@index([suspendedUntil])
   @@index([createdAt])
   @@map("user_suspensions")
+}
+
+model AffiliateLink {
+  id          String    @id @default(cuid())
+  bookId      String    @map("book_id")
+  isbn        String
+  provider    String
+  clickCount  Int       @default(0) @map("click_count")
+  conversions Int       @default(0)
+  revenue     Decimal   @default(0) @db.Decimal(10, 2)
+  lastClicked DateTime? @map("last_clicked")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  book Book @relation(fields: [bookId], references: [id], onDelete: Cascade)
+
+  @@unique([bookId, provider])
+  @@index([bookId])
+  @@index([provider])
+  @@map("affiliate_links")
+}
+
+model AffiliateClick {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  bookId    String   @map("book_id")
+  provider  String
+  source    String?
+  converted Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([bookId])
+  @@index([provider])
+  @@index([createdAt])
+  @@map("affiliate_clicks")
 }

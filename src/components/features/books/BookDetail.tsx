@@ -1,12 +1,20 @@
 'use client';
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, lazy, Suspense } from 'react';
 import { BookDetailHero } from './BookDetailHero';
 import { BookDescription } from './BookDescription';
 import { BookReadersCount } from './BookReadersCount';
 import { BookDetailActions } from './BookDetailActions';
+
+const BookPurchaseButton = lazy(() =>
+  import('./BookPurchaseButton').then((m) => ({ default: m.BookPurchaseButton }))
+);
+const PostReadingRecommendations = lazy(() =>
+  import('./PostReadingRecommendations').then((m) => ({ default: m.PostReadingRecommendations }))
+);
 import { SessionList } from '@/components/features/sessions/SessionList';
 import { AuthorEngagementMetrics } from '@/components/features/authors/AuthorEngagementMetrics';
+import { BookDiscussion } from '@/components/features/discussions';
 import type { BookDetailData } from '@/actions/books';
 import type { BookSearchResult } from '@/services/books/types';
 import type { ReadingStatus, ReadingSession } from '@prisma/client';
@@ -18,7 +26,7 @@ interface BookDetailProps {
 }
 
 export function BookDetail({ data, initialSessions = [], initialCursor = null }: BookDetailProps) {
-  const { book, stats, userStatus, authorVerified } = data;
+  const { book, stats, userStatus, authorVerified, authorUserId } = data;
 
   // Local state to track library status for optimistic updates
   const [isInLibrary, setIsInLibrary] = useState(userStatus?.isInLibrary ?? false);
@@ -90,6 +98,25 @@ export function BookDetail({ data, initialSessions = [], initialCursor = null }:
         className="py-4"
       />
 
+      {(book.isbn13 || book.isbn10) && (
+        <div className="border-t border-border">
+          <Suspense fallback={null}>
+            <BookPurchaseButton
+              isbn={(book.isbn13 || book.isbn10)!}
+              bookId={book.id}
+            />
+          </Suspense>
+        </div>
+      )}
+
+      {currentStatus === 'FINISHED' && (
+        <div className="border-t border-border">
+          <Suspense fallback={null}>
+            <PostReadingRecommendations bookId={book.id} bookTitle={book.title} />
+          </Suspense>
+        </div>
+      )}
+
       {isInLibrary && initialSessions.length > 0 && (
         <div className="border-t border-border px-4 py-4" data-testid="book-sessions-section">
           <h3 className="text-sm font-medium text-muted-foreground">Your Sessions</h3>
@@ -100,6 +127,12 @@ export function BookDetail({ data, initialSessions = [], initialCursor = null }:
           />
         </div>
       )}
+
+      <BookDiscussion
+        bookId={book.id}
+        bookTitle={book.title}
+        authorUserId={authorUserId}
+      />
 
       <BookDetailActions
         book={bookSearchResult}

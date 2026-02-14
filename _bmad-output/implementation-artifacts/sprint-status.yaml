@@ -119,14 +119,22 @@ development_status:
   # Epic 9: Stream Integration & Book Discussions
   epic-9: in-progress
   9-1-stream-sdk-setup-user-token-generation: done
-  9-2-book-discussion-thread-display: backlog
-  9-3-create-discussion-posts-threaded-replies: backlog
-  9-4-discussion-sorting-discovery: backlog
+  9-2-book-discussion-thread-display: review
+  9-3-create-discussion-posts-threaded-replies: done
+  9-4-discussion-sorting-discovery: done
   epic-9-retrospective: optional
 
   # Epic 10: Author Chat in Reading Rooms
-  epic-10: backlog
-  10-1-author-chat-panel-activation: backlog
-  10-2-premium-chat-access-free-user-upgrade-prompt: backlog
-  10-3-ephemeral-chat-lifecycle-cleanup: backlog
+  epic-10: in-progress
+  10-1-author-chat-panel-activation: done
+  10-2-premium-chat-access-free-user-upgrade-prompt: done
+  10-3-ephemeral-chat-lifecycle-cleanup: review
   epic-10-retrospective: optional
+
+  # Epic 11: Affiliate Monetization
+  epic-11: in-progress
+  11-1-book-detail-affiliate-integration: done
+  11-2-post-reading-recommendations: done
+  11-3-buddy-read-purchase-flow: backlog
+  11-4-affiliate-analytics-dashboard: backlog
+  epic-11-retrospective: optional

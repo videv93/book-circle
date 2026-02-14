@@ -103,6 +103,12 @@ vi.mock('@/actions/authors/getAuthorPresence', () => ({
   getAuthorPresence: (...args: unknown[]) => mockGetAuthorPresence(...args),
 }));
 
+// Mock AuthorChatPanel (imported by ReadingRoomPanel)
+vi.mock('@/components/features/author-chat', () => ({
+  AuthorChatPanel: ({ authorPresent, authorName }: { authorPresent: boolean; authorName?: string }) =>
+    authorPresent ? <div data-testid="author-chat-panel">Chat with {authorName || 'the Author'}</div> : null,
+}));
+
 // Mock next/link (needed by OccupantDetailSheet)
 vi.mock('next/link', () => ({
   default: ({
@@ -823,6 +829,9 @@ describe('ReadingRoomPanel', () => {
     await waitFor(() => {
       expect(screen.getByTestId('author-here-indicator')).toBeInTheDocument();
     });
+    // AuthorChatPanel should appear when author is present
+    expect(screen.getByTestId('author-chat-panel')).toBeInTheDocument();
+    expect(screen.getByText('Chat with Jane Author')).toBeInTheDocument();
 
     // Then author leaves
     act(() => {
@@ -834,6 +843,8 @@ describe('ReadingRoomPanel', () => {
       expect(screen.queryByTestId('author-here-indicator')).toBeNull();
       expect(screen.getByTestId('author-shimmer-badge')).toBeInTheDocument();
     });
+    // AuthorChatPanel should disappear when author leaves
+    expect(screen.queryByTestId('author-chat-panel')).toBeNull();
   });
 
   it('renders aria-live announcement when author joins', async () => {

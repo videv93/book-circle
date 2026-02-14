@@ -17,6 +17,8 @@ import type { AuthorPresenceData } from '@/actions/authors/getAuthorPresence';
 import { PresenceAvatarStack } from './PresenceAvatarStack';
 import { OccupantDetailSheet } from './OccupantDetailSheet';
 import { AuthorShimmerBadge } from './AuthorShimmerBadge';
+import { AuthorChatPanel } from '@/components/features/author-chat';
+import { deleteAuthorChatChannel } from '@/actions/stream';
 
 interface ReadingRoomPanelProps {
   bookId: string;
@@ -35,6 +37,7 @@ export function ReadingRoomPanel({ bookId, className }: ReadingRoomPanelProps) {
   const heartbeatRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const authorPresenceRef = useRef(authorPresence);
   const connectionModeRef = useRef<string>('disconnected');
+  const activeChatChannelRef = useRef<string | null>(null);
   useEffect(() => {
     authorPresenceRef.current = authorPresence;
   });
@@ -106,8 +109,17 @@ export function ReadingRoomPanel({ bookId, className }: ReadingRoomPanelProps) {
 
   // Idle timeout: auto-leave after 30 minutes of inactivity
   const IDLE_TIMEOUT_MS = 30 * 60 * 1000;
+  const cleanupActiveChatChannel = useCallback(async () => {
+    const channelId = activeChatChannelRef.current;
+    if (channelId) {
+      activeChatChannelRef.current = null;
+      await deleteAuthorChatChannel(channelId).catch(() => {});
+    }
+  }, []);
+
   const handleIdleTimeout = useCallback(async () => {
     try {
+      await cleanupActiveChatChannel();
       await leaveRoom(bookId);
       setShowReturnMessage(memberCountRef.current <= 1);
       setIsJoined(false);
@@ -115,7 +127,7 @@ export function ReadingRoomPanel({ bookId, className }: ReadingRoomPanelProps) {
     } catch {
       // Silently handle — user may have already left
     }
-  }, [bookId]);
+  }, [bookId, cleanupActiveChatChannel]);
 
   const { reset: resetIdleTimer } = useIdleTimeout(
     handleIdleTimeout,
@@ -183,6 +195,7 @@ export function ReadingRoomPanel({ bookId, className }: ReadingRoomPanelProps) {
   const handleLeave = async () => {
     setIsLoading(true);
     try {
+      await cleanupActiveChatChannel();
       const result = await leaveRoom(bookId);
       if (result.success) {
         setShowReturnMessage(safeMemberCount <= 1);
@@ -365,6 +378,14 @@ export function ReadingRoomPanel({ bookId, className }: ReadingRoomPanelProps) {
           />
         </div>
       )}
+
+      <AuthorChatPanel
+        bookId={bookId}
+        authorPresent={authorInRoom}
+        authorUserId={authorPresence?.authorId}
+        authorName={authorPresence?.authorName}
+        onChannelCleanup={() => { activeChatChannelRef.current = null; }}
+      />
 
       {showSheet && (
         <OccupantDetailSheet

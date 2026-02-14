@@ -65,6 +65,31 @@ vi.mock('@/actions/sessions', () => ({
   saveReadingSession: vi.fn(),
 }));
 
+// Mock BookDiscussion
+vi.mock('@/components/features/discussions', () => ({
+  BookDiscussion: ({ bookId }: { bookId: string }) => (
+    <div data-testid="mock-book-discussion">Discussion for {bookId}</div>
+  ),
+}));
+
+// Mock BookPurchaseButton (lazy-loaded)
+vi.mock('./BookPurchaseButton', () => ({
+  BookPurchaseButton: ({ isbn, bookId }: { isbn: string; bookId?: string }) => (
+    <div data-testid="mock-purchase-button">
+      Purchase: {isbn} {bookId}
+    </div>
+  ),
+}));
+
+// Mock PostReadingRecommendations (lazy-loaded)
+vi.mock('./PostReadingRecommendations', () => ({
+  PostReadingRecommendations: ({ bookId, bookTitle }: { bookId: string; bookTitle: string }) => (
+    <div data-testid="mock-recommendations">
+      Recommendations for {bookId} ({bookTitle})
+    </div>
+  ),
+}));
+
 // Mock AuthorEngagementMetrics
 vi.mock('@/components/features/authors/AuthorEngagementMetrics', () => ({
   AuthorEngagementMetrics: ({ bookId }: { bookId: string }) => (
@@ -413,5 +438,59 @@ describe('BookDetail', () => {
     expect(screen.getByTestId('mock-actions')).toHaveTextContent('In Library');
     expect(screen.getByTestId('mock-actions')).toHaveTextContent('Status: CURRENTLY_READING');
     expect(screen.getByTestId('mock-actions')).toHaveTextContent('Progress: 50%');
+  });
+
+  it('renders purchase button when book has ISBN', () => {
+    render(<BookDetail data={mockData} />);
+    expect(screen.getByTestId('mock-purchase-button')).toBeInTheDocument();
+  });
+
+  it('does not render purchase button when book has no ISBN', () => {
+    const dataWithoutIsbn: BookDetailData = {
+      ...mockData,
+      book: {
+        ...mockData.book,
+        isbn10: null,
+        isbn13: null,
+      },
+    };
+
+    render(<BookDetail data={dataWithoutIsbn} />);
+    expect(screen.queryByTestId('mock-purchase-button')).not.toBeInTheDocument();
+  });
+
+  it('shows recommendations when book status is FINISHED', () => {
+    const dataFinished: BookDetailData = {
+      ...mockData,
+      userStatus: {
+        isInLibrary: true,
+        status: 'FINISHED',
+        progress: 100,
+        userBookId: 'ub-1',
+      },
+    };
+
+    render(<BookDetail data={dataFinished} />);
+    expect(screen.getByTestId('mock-recommendations')).toBeInTheDocument();
+  });
+
+  it('does not show recommendations when book is not finished', () => {
+    const dataReading: BookDetailData = {
+      ...mockData,
+      userStatus: {
+        isInLibrary: true,
+        status: 'CURRENTLY_READING',
+        progress: 50,
+        userBookId: 'ub-1',
+      },
+    };
+
+    render(<BookDetail data={dataReading} />);
+    expect(screen.queryByTestId('mock-recommendations')).not.toBeInTheDocument();
+  });
+
+  it('does not show recommendations when user has no status', () => {
+    render(<BookDetail data={mockData} />);
+    expect(screen.queryByTestId('mock-recommendations')).not.toBeInTheDocument();
   });
 });
