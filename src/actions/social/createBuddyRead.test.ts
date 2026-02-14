@@ -23,6 +23,9 @@ vi.mock('@/lib/prisma', () => ({
     book: {
       findUnique: vi.fn(),
     },
+    buddyReadInvitation: {
+      findFirst: vi.fn(),
+    },
     $transaction: (...args: unknown[]) => mockTransaction(...args),
   },
 }));
@@ -33,6 +36,7 @@ import { prisma } from '@/lib/prisma';
 const mockGetSession = auth.api.getSession as unknown as ReturnType<typeof vi.fn>;
 const mockFollowFindUnique = prisma.follow.findUnique as unknown as ReturnType<typeof vi.fn>;
 const mockBookFindUnique = prisma.book.findUnique as unknown as ReturnType<typeof vi.fn>;
+const mockInvitationFindFirst = (prisma as Record<string, unknown> as { buddyReadInvitation: { findFirst: ReturnType<typeof vi.fn> } }).buddyReadInvitation.findFirst;
 
 describe('createBuddyRead', () => {
   beforeEach(() => {
@@ -43,6 +47,7 @@ describe('createBuddyRead', () => {
   it('successfully creates buddy read and invitation', async () => {
     mockFollowFindUnique.mockResolvedValue({ id: 'follow-1' });
     mockBookFindUnique.mockResolvedValue({ id: 'book-1' });
+    mockInvitationFindFirst.mockResolvedValue(null);
     mockTransaction.mockResolvedValue({
       buddyReadId: 'br-1',
       invitationId: 'inv-1',
@@ -104,5 +109,19 @@ describe('createBuddyRead', () => {
     const result = await createBuddyRead({ bookId: '', inviteeId: 'user-2' });
 
     expect(result.success).toBe(false);
+  });
+
+  it('returns error when duplicate pending invitation exists', async () => {
+    mockFollowFindUnique.mockResolvedValue({ id: 'follow-1' });
+    mockBookFindUnique.mockResolvedValue({ id: 'book-1' });
+    mockInvitationFindFirst.mockResolvedValue({ id: 'existing-inv' });
+
+    const result = await createBuddyRead({ bookId: 'book-1', inviteeId: 'user-2' });
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error).toContain('pending invitation');
+    }
+    expect(mockTransaction).not.toHaveBeenCalled();
   });
 });

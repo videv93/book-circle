@@ -47,33 +47,35 @@ export async function respondToBuddyReadInvitation(
       return { success: false, error: 'Invitation already responded to' };
     }
 
-    // Update invitation status
-    await prisma.buddyReadInvitation.update({
-      where: { id: invitationId },
-      data: { status: response },
-    });
-
-    // On accept, add book to invitee's library if not already present
-    if (response === 'ACCEPTED') {
-      const existing = await prisma.userBook.findUnique({
-        where: {
-          userId_bookId: {
-            userId: session.user.id,
-            bookId: invitation.buddyRead.bookId,
-          },
-        },
+    // Update invitation status and optionally add book to library in a transaction
+    await prisma.$transaction(async (tx) => {
+      await tx.buddyReadInvitation.update({
+        where: { id: invitationId },
+        data: { status: response },
       });
 
-      if (!existing) {
-        await prisma.userBook.create({
-          data: {
-            userId: session.user.id,
-            bookId: invitation.buddyRead.bookId,
-            status: 'WANT_TO_READ',
+      // On accept, add book to invitee's library if not already present
+      if (response === 'ACCEPTED') {
+        const existing = await tx.userBook.findUnique({
+          where: {
+            userId_bookId: {
+              userId: session.user.id,
+              bookId: invitation.buddyRead.bookId,
+            },
           },
         });
+
+        if (!existing) {
+          await tx.userBook.create({
+            data: {
+              userId: session.user.id,
+              bookId: invitation.buddyRead.bookId,
+              status: 'WANT_TO_READ',
+            },
+          });
+        }
       }
-    }
+    });
 
     return { success: true, data: { status: response } };
   } catch {

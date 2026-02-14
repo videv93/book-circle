@@ -51,6 +51,19 @@ export async function createBuddyRead(
       return { success: false, error: 'Book not found' };
     }
 
+    // Check for existing pending invitation for same inviter/invitee/book
+    const existingInvitation = await prisma.buddyReadInvitation.findFirst({
+      where: {
+        inviterId: session.user.id,
+        inviteeId,
+        status: 'PENDING',
+        buddyRead: { bookId },
+      },
+    });
+    if (existingInvitation) {
+      return { success: false, error: 'You already have a pending invitation for this book and user' };
+    }
+
     // Create buddy read and invitation in a transaction
     const result = await prisma.$transaction(async (tx) => {
       const buddyRead = await tx.buddyRead.create({

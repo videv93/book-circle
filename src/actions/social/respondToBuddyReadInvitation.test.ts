@@ -13,16 +13,22 @@ vi.mock('@/lib/auth', () => ({
   },
 }));
 
+const txClient = {
+  buddyReadInvitation: {
+    update: vi.fn(),
+  },
+  userBook: {
+    findUnique: vi.fn(),
+    create: vi.fn(),
+  },
+};
+
 vi.mock('@/lib/prisma', () => ({
   prisma: {
     buddyReadInvitation: {
       findUnique: vi.fn(),
-      update: vi.fn(),
     },
-    userBook: {
-      findUnique: vi.fn(),
-      create: vi.fn(),
-    },
+    $transaction: vi.fn((cb: (tx: typeof txClient) => Promise<unknown>) => cb(txClient)),
   },
 }));
 
@@ -32,11 +38,11 @@ import { prisma } from '@/lib/prisma';
 const mockGetSession = auth.api.getSession as unknown as ReturnType<typeof vi.fn>;
 const mockInvitationFindUnique = prisma.buddyReadInvitation
   .findUnique as unknown as ReturnType<typeof vi.fn>;
-const mockInvitationUpdate = prisma.buddyReadInvitation.update as unknown as ReturnType<
+const mockInvitationUpdate = txClient.buddyReadInvitation.update as unknown as ReturnType<
   typeof vi.fn
 >;
-const mockUserBookFindUnique = prisma.userBook.findUnique as unknown as ReturnType<typeof vi.fn>;
-const mockUserBookCreate = prisma.userBook.create as unknown as ReturnType<typeof vi.fn>;
+const mockUserBookFindUnique = txClient.userBook.findUnique as unknown as ReturnType<typeof vi.fn>;
+const mockUserBookCreate = txClient.userBook.create as unknown as ReturnType<typeof vi.fn>;
 
 const pendingInvitation = {
   id: 'inv-1',

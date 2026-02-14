@@ -90,6 +90,13 @@ vi.mock('./PostReadingRecommendations', () => ({
   ),
 }));
 
+// Mock StartBuddyReadButton (lazy-loaded)
+vi.mock('@/components/features/social/StartBuddyReadButton', () => ({
+  StartBuddyReadButton: ({ bookId }: { bookId: string }) => (
+    <div data-testid="mock-start-buddy-read">Start Buddy Read: {bookId}</div>
+  ),
+}));
+
 // Mock AuthorEngagementMetrics
 vi.mock('@/components/features/authors/AuthorEngagementMetrics', () => ({
   AuthorEngagementMetrics: ({ bookId }: { bookId: string }) => (
@@ -492,5 +499,21 @@ describe('BookDetail', () => {
   it('does not show recommendations when user has no status', () => {
     render(<BookDetail data={mockData} />);
     expect(screen.queryByTestId('mock-recommendations')).not.toBeInTheDocument();
+  });
+
+  it('renders buddy read button when book is in library', async () => {
+    const user = userEvent.setup();
+    render(<BookDetail data={mockData} />);
+
+    // Add to library
+    await user.click(screen.getByTestId('add-button'));
+
+    expect(screen.getByTestId('mock-start-buddy-read')).toBeInTheDocument();
+    expect(screen.getByTestId('mock-start-buddy-read')).toHaveTextContent('book-123');
+  });
+
+  it('does not render buddy read button when book is not in library', () => {
+    render(<BookDetail data={mockData} />);
+    expect(screen.queryByTestId('mock-start-buddy-read')).not.toBeInTheDocument();
   });
 });
