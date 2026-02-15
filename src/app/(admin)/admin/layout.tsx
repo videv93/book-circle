@@ -24,7 +24,7 @@ export default async function AdminLayout({
 
   if (!user || !isAdmin(user)) {
     console.warn(`[Admin Access Denied] userId=${session.user.id} attempted to access admin routes`);
-    redirect('/home');
+    redirect('/home?accessDenied=true');
   }
 
   return <AdminShell>{children}</AdminShell>;

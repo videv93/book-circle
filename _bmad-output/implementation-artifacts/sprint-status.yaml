@@ -93,7 +93,7 @@ development_status:
 
   # Epic 6: Administration & Platform Health
   epic-6: in-progress
-  6-1-admin-role-access-control: review
+  6-1-admin-role-access-control: done
   6-2-moderation-queue: review
   6-3-content-removal: done
   6-4-user-warnings-suspension: done

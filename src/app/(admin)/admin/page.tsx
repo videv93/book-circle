@@ -1,4 +1,4 @@
-import { BookCheck, Shield, Users, BarChart3, Search } from 'lucide-react';
+import { BookCheck, Shield, Users, Search } from 'lucide-react';
 import { getDashboardStats } from '@/actions/admin/getDashboardStats';
 import { DashboardStatCard } from '@/components/features/admin/DashboardStatCard';
 import { AdminActivityLog } from '@/components/features/admin/AdminActivityLog';

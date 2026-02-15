@@ -1,8 +1,9 @@
 'use client';
 
+import { useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { logout } from '@/actions/auth/logout';
@@ -33,6 +34,15 @@ export function HomeContent({
   freezesAvailable = 0,
 }: HomeContentProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    if (searchParams.get('accessDenied') === 'true') {
+      toast.error('Access denied');
+      // Clean up the URL param
+      window.history.replaceState({}, '', '/home');
+    }
+  }, [searchParams]);
 
   const handleSignOut = async () => {
     toast.success('Signed out successfully');

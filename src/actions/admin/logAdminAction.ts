@@ -1,5 +1,4 @@
-'use server';
-
+// Internal utility — NOT a server action. Only called from other server actions.
 import { prisma } from '@/lib/prisma';
 
 interface LogAdminActionInput {

@@ -1,6 +1,6 @@
 # Story 6.1: Admin Role & Access Control
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 

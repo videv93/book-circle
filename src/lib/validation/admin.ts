@@ -2,9 +2,11 @@ import { z } from 'zod';
 
 export const userRoleEnum = z.enum(['USER', 'AUTHOR', 'ADMIN', 'SUPER_ADMIN']);
 
+export const promotableRoleEnum = z.enum(['USER', 'AUTHOR', 'ADMIN']);
+
 export const promoteUserSchema = z.object({
   userId: z.string().min(1, 'User ID is required'),
-  newRole: userRoleEnum,
+  newRole: promotableRoleEnum,
 });
 
 export type PromoteUserInput = z.infer<typeof promoteUserSchema>;
