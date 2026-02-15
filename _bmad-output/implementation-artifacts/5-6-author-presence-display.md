@@ -1,6 +1,6 @@
 # Story 5.6: Author Presence Display
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -381,3 +381,17 @@ Claude Opus 4.6
 - `src/components/features/books/BookDetailActions.test.tsx` — Added getAuthorPresence mock
 - `src/app/api/pusher/auth/route.ts` — Added isAuthor to presence channel user_info
 - `src/app/api/pusher/auth/route.test.ts` — Added prisma mock, updated assertions, new isAuthor test
+
+## Senior Developer Review (AI)
+
+**Review Date:** 2026-02-15
+**Review Outcome:** Approve (with fixes applied)
+**Reviewer:** Claude Opus 4.6
+
+### Findings Summary
+- 0 High, 2 Medium, 1 Low issues found; 1 fixed automatically, 1 accepted, 1 deferred
+
+### Action Items
+- [x] [MED] Fixed stale author presence data — `getAuthorPresence` now refetches when `isJoined` changes, preventing stale "Author is here!" display after author has left
+- [ ] [MED] `PresenceAvatarStack` uses `animate-pulse` (opacity-based) instead of ring-specific golden shimmer — acceptable visual distinction, matches "subtle pulse" spec intent
+- [ ] [LOW] `formatTimeAgo` is custom instead of `date-fns` — correct decision since date-fns is not installed

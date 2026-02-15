@@ -1,6 +1,8 @@
 'use server';
 
 import { z } from 'zod';
+import { headers } from 'next/headers';
+import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import type { ActionResult } from '@/actions/books/types';
 
@@ -18,6 +20,12 @@ export async function getAuthorPresence(
 ): Promise<ActionResult<AuthorPresenceData | null>> {
   try {
     const validated = getAuthorPresenceSchema.parse(bookId);
+
+    const headersList = await headers();
+    const session = await auth.api.getSession({ headers: headersList });
+    if (!session?.user?.id) {
+      return { success: false, error: 'You must be logged in' };
+    }
 
     // 1. Find verified author for this book
     const claim = await prisma.authorClaim.findFirst({

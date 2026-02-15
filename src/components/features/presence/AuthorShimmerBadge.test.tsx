@@ -35,7 +35,7 @@ describe('AuthorShimmerBadge', () => {
     render(<AuthorShimmerBadge {...defaultProps} />);
 
     const link = screen.getByTestId('author-shimmer-badge');
-    expect(link).toHaveAttribute('href', '/profile/author-1');
+    expect(link).toHaveAttribute('href', '/user/author-1');
   });
 
   it('has correct aria-label for was-here state', () => {

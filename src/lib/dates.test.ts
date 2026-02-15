@@ -48,10 +48,40 @@ describe('dates utilities', () => {
       expect(end.toISOString()).toBe('2026-02-06T15:00:00.000Z');
     });
 
+    it('returns correct bounds for Asia/Kolkata (UTC+5:30)', () => {
+      // 2026-02-06T20:00:00Z = 2026-02-07T01:30:00 IST (Feb 7 in IST)
+      vi.setSystemTime(new Date('2026-02-06T20:00:00.000Z'));
+
+      const { start, end } = getTodayBounds('Asia/Kolkata');
+
+      // Feb 7 in IST → midnight Feb 7 IST = Feb 6 18:30 UTC
+      expect(start.toISOString()).toBe('2026-02-06T18:30:00.000Z');
+      expect(end.toISOString()).toBe('2026-02-07T18:30:00.000Z');
+    });
+
+    it('returns correct bounds for Asia/Kathmandu (UTC+5:45)', () => {
+      // 2026-02-06T20:00:00Z = 2026-02-07T01:45:00 NPT (Feb 7 in NPT)
+      vi.setSystemTime(new Date('2026-02-06T20:00:00.000Z'));
+
+      const { start, end } = getTodayBounds('Asia/Kathmandu');
+
+      // Feb 7 in NPT → midnight Feb 7 NPT = Feb 6 18:15 UTC
+      expect(start.toISOString()).toBe('2026-02-06T18:15:00.000Z');
+      expect(end.toISOString()).toBe('2026-02-07T18:15:00.000Z');
+    });
+
     it('spans exactly 24 hours', () => {
       vi.setSystemTime(new Date('2026-06-15T12:00:00.000Z'));
 
       const { start, end } = getTodayBounds('America/Los_Angeles');
+
+      expect(end.getTime() - start.getTime()).toBe(24 * 60 * 60 * 1000);
+    });
+
+    it('spans exactly 24 hours for fractional timezone', () => {
+      vi.setSystemTime(new Date('2026-06-15T12:00:00.000Z'));
+
+      const { start, end } = getTodayBounds('Asia/Kolkata');
 
       expect(end.getTime() - start.getTime()).toBe(24 * 60 * 60 * 1000);
     });
@@ -73,6 +103,18 @@ describe('dates utilities', () => {
       const { start, end } = getYesterdayBounds('America/New_York');
 
       expect(end.getTime() - start.getTime()).toBe(24 * 60 * 60 * 1000);
+    });
+
+    it('returns correct yesterday across DST spring-forward (US/Eastern)', () => {
+      // 2026 DST spring-forward: March 8, 2:00 AM ET
+      // On March 8 at 3:00 AM ET (07:00 UTC), yesterday should be March 7
+      vi.setSystemTime(new Date('2026-03-08T07:00:00.000Z'));
+
+      const { start, end } = getYesterdayBounds('America/New_York');
+
+      // March 7 in ET is a standard time day (UTC-5)
+      expect(start.toISOString()).toBe('2026-03-07T05:00:00.000Z');
+      expect(end.toISOString()).toBe('2026-03-08T05:00:00.000Z');
     });
   });
 

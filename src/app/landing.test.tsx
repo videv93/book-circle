@@ -82,8 +82,7 @@ describe('Landing Page', () => {
       render(page);
 
       const headings = screen.getAllByRole('heading', { level: 2 });
-      // Should have at least 3 h2 headings for value props
-      expect(headings.length).toBeGreaterThanOrEqual(3);
+      expect(headings).toHaveLength(3);
     });
 
     it('renders value prop about reading habits', async () => {
@@ -114,8 +113,7 @@ describe('Landing Page', () => {
       render(page);
 
       const ctaLinks = screen.getAllByRole('link', { name: /get started/i });
-      // Should have at least 2 CTA links (hero + bottom)
-      expect(ctaLinks.length).toBeGreaterThanOrEqual(2);
+      expect(ctaLinks).toHaveLength(2);
     });
   });
 
@@ -130,8 +128,20 @@ describe('Landing Page', () => {
       render(page);
 
       const homeLinks = screen.getAllByRole('link', { name: /go to home/i });
-      expect(homeLinks.length).toBeGreaterThanOrEqual(1);
+      expect(homeLinks).toHaveLength(2);
       expect(homeLinks[0]).toHaveAttribute('href', '/home');
+      expect(homeLinks[1]).toHaveAttribute('href', '/home');
+    });
+
+    it('falls back to unauthenticated state when getSession throws', async () => {
+      mockGetSession.mockRejectedValue(new Error('DB connection failed'));
+
+      const page = await Home();
+      render(page);
+
+      const ctaLinks = screen.getAllByRole('link', { name: /get started/i });
+      expect(ctaLinks).toHaveLength(2);
+      expect(ctaLinks[0]).toHaveAttribute('href', '/login');
     });
 
     it('does not show "Get Started" when authenticated', async () => {

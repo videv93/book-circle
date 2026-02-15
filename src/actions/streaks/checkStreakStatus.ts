@@ -135,9 +135,11 @@ export async function checkStreakStatus(
     }
 
     // Streak is at risk — missed yesterday (and possibly more days)
-    const lastMetTime = streak.lastGoalMetDate.getTime();
+    // Calculate missed days using timezone-aware date strings to avoid UTC offset errors
+    const lastMetDayStr = getDateInTimezone(streak.lastGoalMetDate, timezone);
+    const lastMetMidnight = new Date(`${lastMetDayStr}T00:00:00.000Z`);
     const todayMidnight = new Date(`${todayStr}T00:00:00.000Z`);
-    const diffMs = todayMidnight.getTime() - lastMetTime;
+    const diffMs = todayMidnight.getTime() - lastMetMidnight.getTime();
     const missedDays = Math.max(0, Math.floor(diffMs / (24 * 60 * 60 * 1000)) - 1);
 
     return {

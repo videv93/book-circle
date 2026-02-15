@@ -59,7 +59,7 @@ export function OccupantDetailSheet({
           {sorted.map((member) => (
             <Link
               key={member.id}
-              href={`/profile/${member.id}`}
+              href={`/user/${member.id}`}
               className="flex items-center gap-3 rounded-lg px-2 py-2 min-h-[44px] hover:bg-amber-50 transition-colors"
               aria-label={member.isAuthor ? `Author ${member.name}'s profile` : `${member.name}'s profile`}
               onClick={() => onOpenChange(false)}

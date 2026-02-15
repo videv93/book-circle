@@ -1,6 +1,6 @@
 # Story 3.6: Streak Credit & Reset Logic
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -390,6 +390,31 @@ Recent commits:
 - [Source: src/app/(main)/home/HomeContent.tsx#StreakRing integration]
 - [Source: prisma/schema.prisma#UserStreak model, ReadingSession model]
 
+## Senior Developer Review (AI)
+
+**Review Date:** 2026-02-15
+**Review Outcome:** Changes Requested (auto-fixed)
+**Reviewer:** Claude Opus 4.6
+
+### Findings Summary
+- **2 High, 3 Medium, 2 Low** issues found; **5 fixed automatically**, 2 Low accepted
+
+### Action Items
+- [x] [HIGH] Fix `getDayBounds` offset calculation to handle fractional timezone offsets (Asia/Kolkata UTC+5:30, Asia/Kathmandu UTC+5:45) — `src/lib/dates.ts`
+- [x] [HIGH] Fix `getDayBounds` to use UTC reference point instead of system-local date parsing — `src/lib/dates.ts`
+- [x] [MED] Add tests for fractional timezone offsets (Asia/Kolkata, Asia/Kathmandu) — `src/lib/dates.test.ts`
+- [x] [MED] Fix `checkStreakStatus` missedDays to use timezone-aware date comparison — `src/actions/streaks/checkStreakStatus.ts`
+- [x] [MED] Fix `updateStreakOnGoalMet` to return actual streak data (not zeros) for `goal_not_met` case — `src/actions/streaks/updateStreakOnGoalMet.ts`
+- [ ] [LOW] `getStreakData.ts` listed as modified in File List but no change description
+- [ ] [LOW] Hardcoded `'UTC'` timezone in home page (3 TODO comments) — technical debt for future story
+
+### Second Review (2026-02-15)
+**Reviewer:** Claude Opus 4.6
+**Outcome:** Approve (with fixes applied)
+- [x] [HIGH] Fixed `getYesterdayBounds` DST bug — was using `now - 24h` which fails during DST spring-forward; now uses calendar date arithmetic via `getDateInTimezone`
+- [x] [MED] Added DST spring-forward test for `getYesterdayBounds` in `dates.test.ts`
+- [ ] [LOW] `updateStreakInternal` is exported despite "Internal" name — naming inconsistency, not a bug
+
 ## Dev Agent Record
 
 ### Agent Model Used
@@ -412,6 +437,7 @@ Claude Opus 4.6 (claude-opus-4-6)
 - 68 tests across 5 Story 3.6 test files all pass (18 + 8 + 13 + 10 + 19)
 - Full suite: 1194 tests pass, 2 pre-existing failures (middleware.test.ts import issue from proxy.ts rename, AppShell.test.tsx missing DATABASE_URL)
 - TypeScript and ESLint pass for all Story 3.6 files (pre-existing issues in unrelated files only)
+- **Code Review (2026-02-15):** Fixed 5 issues — getDayBounds fractional TZ offset bug, UTC parsing bug, checkStreakStatus missedDays calculation, updateStreakOnGoalMet goal_not_met returning zeros, added 3 fractional TZ tests. 71 story tests pass.
 
 ### File List
 

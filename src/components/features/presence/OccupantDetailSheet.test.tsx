@@ -185,8 +185,8 @@ describe('OccupantDetailSheet', () => {
       />
     );
     const links = screen.getAllByRole('link');
-    expect(links[0]).toHaveAttribute('href', '/profile/user-0');
-    expect(links[1]).toHaveAttribute('href', '/profile/user-1');
+    expect(links[0]).toHaveAttribute('href', '/user/user-0');
+    expect(links[1]).toHaveAttribute('href', '/user/user-1');
   });
 
   it('has accessible aria-label on each member row', () => {
@@ -260,8 +260,8 @@ describe('OccupantDetailSheet', () => {
       />
     );
     const links = screen.getAllByRole('link');
-    expect(links[0]).toHaveAttribute('href', '/profile/u2');
-    expect(links[1]).toHaveAttribute('href', '/profile/u1');
+    expect(links[0]).toHaveAttribute('href', '/user/u2');
+    expect(links[1]).toHaveAttribute('href', '/user/u1');
   });
 
   it('shows "Author" badge for verified author', () => {

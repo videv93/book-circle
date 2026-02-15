@@ -159,14 +159,14 @@ export function ReadingRoomPanel({ bookId, className }: ReadingRoomPanelProps) {
     }).catch(() => {});
   }, [bookId, userId]);
 
-  // Fetch author presence on mount
+  // Fetch author presence on mount and when join state changes
   useEffect(() => {
     getAuthorPresence(bookId).then((result) => {
       if (result.success) {
         setAuthorPresence(result.data);
       }
     }).catch(() => {});
-  }, [bookId]);
+  }, [bookId, isJoined]);
 
   // Close sheet when member count drops to sole reader
   useEffect(() => {
@@ -284,7 +284,7 @@ export function ReadingRoomPanel({ bookId, className }: ReadingRoomPanelProps) {
           <div className="mt-2">
             <AuthorShimmerBadge
               authorName={authorPresence.authorName}
-              lastSeenAt={authorPresence.lastSeenAt!}
+              lastSeenAt={authorPresence.lastSeenAt ?? new Date()}
               isLive={false}
               authorId={authorPresence.authorId}
             />
@@ -372,7 +372,7 @@ export function ReadingRoomPanel({ bookId, className }: ReadingRoomPanelProps) {
         <div className="mt-1">
           <AuthorShimmerBadge
             authorName={authorPresence.authorName}
-            lastSeenAt={authorPresence.lastSeenAt!}
+            lastSeenAt={authorPresence.lastSeenAt ?? new Date()}
             isLive={false}
             authorId={authorPresence.authorId}
           />

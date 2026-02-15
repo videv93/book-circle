@@ -1,6 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { getAuthorPresence } from './getAuthorPresence';
 
+const mockGetSession = vi.fn();
+vi.mock('next/headers', () => ({
+  headers: vi.fn().mockResolvedValue(new Headers()),
+}));
+vi.mock('@/lib/auth', () => ({
+  auth: { api: { getSession: (...args: unknown[]) => mockGetSession(...args) } },
+}));
+
 vi.mock('@/lib/prisma', () => ({
   prisma: {
     authorClaim: { findFirst: vi.fn() },
@@ -16,6 +24,13 @@ const mockRoomPresence = prisma.roomPresence as unknown as { findFirst: ReturnTy
 describe('getAuthorPresence', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockGetSession.mockResolvedValue({ user: { id: 'user-1' } });
+  });
+
+  it('returns error when not authenticated', async () => {
+    mockGetSession.mockResolvedValue(null);
+    const result = await getAuthorPresence('book-1');
+    expect(result).toEqual({ success: false, error: 'You must be logged in' });
   });
 
   it('returns null when no approved claim exists for book', async () => {

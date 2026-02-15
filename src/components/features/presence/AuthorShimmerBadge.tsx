@@ -38,7 +38,7 @@ export function AuthorShimmerBadge({
 
   return (
     <Link
-      href={`/profile/${authorId}`}
+      href={`/user/${authorId}`}
       className={cn(
         'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full min-h-[44px]',
         'text-sm font-medium transition-colors',

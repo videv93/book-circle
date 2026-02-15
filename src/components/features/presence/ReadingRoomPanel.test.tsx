@@ -103,6 +103,13 @@ vi.mock('@/actions/authors/getAuthorPresence', () => ({
   getAuthorPresence: (...args: unknown[]) => mockGetAuthorPresence(...args),
 }));
 
+// Mock @/actions/stream (imported by AuthorChatPanel via ReadingRoomPanel)
+vi.mock('@/actions/stream', () => ({
+  deleteAuthorChatChannel: vi.fn(),
+  getBookChannel: vi.fn(),
+  generateStreamToken: vi.fn(),
+}));
+
 // Mock AuthorChatPanel (imported by ReadingRoomPanel)
 vi.mock('@/components/features/author-chat', () => ({
   AuthorChatPanel: ({ authorPresent, authorName }: { authorPresent: boolean; authorName?: string }) =>
@@ -513,8 +520,8 @@ describe('ReadingRoomPanel', () => {
       expect(screen.getByText('Reader 1')).toBeInTheDocument();
     });
     const links = screen.getAllByRole('link');
-    expect(links[0]).toHaveAttribute('href', '/profile/user-0');
-    expect(links[1]).toHaveAttribute('href', '/profile/user-1');
+    expect(links[0]).toHaveAttribute('href', '/user/user-0');
+    expect(links[1]).toHaveAttribute('href', '/user/user-1');
   });
 
   // --- Last person leaves (Story 5.4, AC #5) ---

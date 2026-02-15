@@ -79,9 +79,14 @@ describe('updateStreakOnGoalMet', () => {
     }
   });
 
-  it('returns goal_not_met when minutes below goal', async () => {
+  it('returns goal_not_met with actual streak data when minutes below goal', async () => {
     mockUserFind.mockResolvedValue({ dailyGoalMinutes: 30 } as any);
     mockAggregate.mockResolvedValue({ _sum: { duration: 1500 } } as any); // 25 min
+    mockStreakFind.mockResolvedValue({
+      currentStreak: 5,
+      longestStreak: 10,
+      freezesAvailable: 2,
+    } as any);
 
     const result = await updateStreakOnGoalMet({ timezone: 'UTC' });
 
@@ -89,6 +94,9 @@ describe('updateStreakOnGoalMet', () => {
     if (result.success) {
       expect(result.data.reason).toBe('goal_not_met');
       expect(result.data.streakUpdated).toBe(false);
+      expect(result.data.currentStreak).toBe(5);
+      expect(result.data.longestStreak).toBe(10);
+      expect(result.data.freezesAvailable).toBe(2);
     }
   });
 

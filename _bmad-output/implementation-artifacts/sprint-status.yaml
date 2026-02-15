@@ -39,13 +39,13 @@ story_location: /opt/apps/flappy-bird-1/_bmad-output/implementation-artifacts
 
 development_status:
   # Epic 1: Project Foundation & User Authentication
-  epic-1: in-progress
+  epic-1: done
   1-1-project-initialization-core-infrastructure: done
   1-2-oauth-authentication-with-google: done
   1-3-oauth-authentication-with-apple: done
   1-4-user-profile-management: done
   1-5-bottom-navigation-app-shell: done
-  1-6-public-landing-page: in-progress
+  1-6-public-landing-page: done
   epic-1-retrospective: optional
 
   # Epic 2: Book Library & Discovery
@@ -65,14 +65,14 @@ development_status:
   3-3-session-history: done
   3-4-daily-reading-goal: done
   3-5-streak-ring-display: done
-  3-6-streak-credit-reset-logic: review
+  3-6-streak-credit-reset-logic: done
   3-7-streak-freeze: done
   3-8-streak-history: done
   epic-3-retrospective: optional
 
   # Epic 4: Social Connections & Activity Feed
   epic-4: in-progress
-  4-1-follow-unfollow-users: in-progress
+  4-1-follow-unfollow-users: done
   4-2-view-other-user-profiles: done
   4-3-activity-feed: done
   4-4-give-kudos: done
@@ -87,7 +87,7 @@ development_status:
   5-3-see-room-occupants: done
   5-4-leave-reading-room: done
   5-5-author-claim-verification: done
-  5-6-author-presence-display: review
+  5-6-author-presence-display: done
   5-7-author-join-notification: review
   epic-5-retrospective: optional
 

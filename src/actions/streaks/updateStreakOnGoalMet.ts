@@ -68,14 +68,19 @@ export async function updateStreakInternal(
   const minutesRead = Math.floor(totalSeconds / 60);
 
   if (minutesRead < goalMinutes) {
+    // Fetch actual streak so consumers can display correct count
+    const currentStreakData = await prisma.userStreak.findUnique({
+      where: { userId },
+      select: { currentStreak: true, longestStreak: true, freezesAvailable: true },
+    });
     return {
       streakUpdated: false,
-      currentStreak: 0,
-      longestStreak: 0,
+      currentStreak: currentStreakData?.currentStreak ?? 0,
+      longestStreak: currentStreakData?.longestStreak ?? 0,
       wasReset: false,
       reason: 'goal_not_met',
       freezesEarned: 0,
-      freezesAvailable: 0,
+      freezesAvailable: currentStreakData?.freezesAvailable ?? 0,
     };
   }
 

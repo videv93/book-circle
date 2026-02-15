@@ -40,9 +40,14 @@ const valueProps = [
 ];
 
 export default async function Home() {
-  const headersList = await headers();
-  const session = await auth.api.getSession({ headers: headersList });
-  const isAuthenticated = !!session?.user;
+  let isAuthenticated = false;
+  try {
+    const headersList = await headers();
+    const session = await auth.api.getSession({ headers: headersList });
+    isAuthenticated = !!session?.user;
+  } catch {
+    // Default to unauthenticated if session check fails
+  }
 
   const ctaText = isAuthenticated ? "Go to Home" : "Get Started";
   const ctaHref = isAuthenticated ? "/home" : "/login";
