@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import {
   Channel,
+  MessageInput,
   MessageList,
   Window,
 } from 'stream-chat-react';
@@ -128,6 +129,7 @@ export function BookDiscussion({ bookId, authorUserId }: BookDiscussionProps) {
         <Channel channel={channel} Message={CustomMessage}>
           <Window>
             <MessageList />
+            <MessageInput />
           </Window>
         </Channel>
       </div>

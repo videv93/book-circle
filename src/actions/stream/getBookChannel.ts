@@ -22,8 +22,11 @@ export async function getBookChannel(
 
     const client = getStreamServerClient();
     const channelId = `book-${input.bookId}`;
-    const channel = client.channel('messaging', channelId);
-    await channel.watch();
+    const channel = client.channel('messaging', channelId, {
+      created_by_id: session.user.id,
+    });
+    await channel.create();
+    await channel.addMembers([session.user.id]);
 
     return { success: true, data: { channelId } };
   } catch (error) {
