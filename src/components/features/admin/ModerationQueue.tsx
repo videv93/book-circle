@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { ModerationItemCard } from './ModerationItemCard';
 import { ModerationEmptyState } from './ModerationEmptyState';
@@ -19,7 +20,7 @@ const CONTENT_TYPE_OPTIONS = [
 ];
 
 const STATUS_OPTIONS = [
-  { value: '', label: 'Pending' },
+  { value: 'PENDING', label: 'Pending' },
   { value: 'DISMISSED', label: 'Dismissed' },
   { value: 'WARNED', label: 'Warned' },
   { value: 'REMOVED', label: 'Removed' },
@@ -29,7 +30,7 @@ const STATUS_OPTIONS = [
 export function ModerationQueue({ initialData }: ModerationQueueProps) {
   const [data, setData] = useState<ModerationQueueResult>(initialData);
   const [contentTypeFilter, setContentTypeFilter] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('PENDING');
   const [loading, setLoading] = useState(false);
 
   const fetchQueue = useCallback(async (page = 1, contentType?: string, status?: string) => {
@@ -44,6 +45,8 @@ export function ModerationQueue({ initialData }: ModerationQueueProps) {
 
       if (result.success) {
         setData(result.data);
+      } else {
+        toast.error(result.error ?? 'Failed to load moderation queue');
       }
     } finally {
       setLoading(false);
@@ -75,6 +78,7 @@ export function ModerationQueue({ initialData }: ModerationQueueProps) {
             variant={contentTypeFilter === opt.value ? 'default' : 'outline'}
             size="sm"
             onClick={() => handleContentTypeChange(opt.value)}
+            aria-pressed={contentTypeFilter === opt.value}
             className="min-h-[44px]"
           >
             {opt.label}
@@ -89,6 +93,7 @@ export function ModerationQueue({ initialData }: ModerationQueueProps) {
             variant={statusFilter === opt.value ? 'secondary' : 'ghost'}
             size="sm"
             onClick={() => handleStatusChange(opt.value)}
+            aria-pressed={statusFilter === opt.value}
             className="min-h-[44px]"
           >
             {opt.label}

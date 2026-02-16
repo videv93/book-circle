@@ -14,6 +14,11 @@ export async function deleteAuthorChatChannel(
       return { success: false, error: 'Invalid channelId' };
     }
 
+    // Only allow deletion of ephemeral author chat channels
+    if (!channelId.startsWith('author-chat-')) {
+      return { success: false, error: 'Invalid channel type for deletion' };
+    }
+
     const headersList = await headers();
     const session = await auth.api.getSession({ headers: headersList });
     if (!session?.user?.id) {

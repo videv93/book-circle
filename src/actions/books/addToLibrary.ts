@@ -6,8 +6,8 @@ import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { isPremium } from '@/lib/premium';
 import { FREE_TIER_BOOK_LIMIT } from '@/lib/config/constants';
-import type { Book, ReadingStatus } from '@prisma/client';
-import type { AddToLibraryResult } from './types';
+import { PremiumStatus, type Book, type ReadingStatus } from '@prisma/client';
+import type { AddToLibraryResult, BookLimitError } from './types';
 
 // Input validation schema
 const addToLibrarySchema = z.object({
@@ -23,6 +23,32 @@ const addToLibrarySchema = z.object({
 });
 
 export type AddToLibraryInput = z.infer<typeof addToLibrarySchema>;
+
+/**
+ * Check book limit for free users. Returns a BookLimitError if at limit, null otherwise.
+ * Note: There is a theoretical TOCTOU race between count and create, but for a
+ * low-stakes 3-book limit this is acceptable — a DB unique constraint or
+ * serializable transaction would be needed to fully prevent it.
+ */
+async function checkBookLimit(userId: string): Promise<BookLimitError | null> {
+  const userIsPremium = await isPremium(userId);
+  if (userIsPremium) return null;
+
+  const activeBookCount = await prisma.userBook.count({
+    where: { userId, deletedAt: null },
+  });
+  if (activeBookCount >= FREE_TIER_BOOK_LIMIT) {
+    return {
+      success: false,
+      error: `You've reached the free tier limit of ${FREE_TIER_BOOK_LIMIT} books. Upgrade to premium for unlimited tracking!`,
+      code: 'BOOK_LIMIT_REACHED',
+      premiumStatus: PremiumStatus.FREE,
+      currentBookCount: activeBookCount,
+      maxBooks: FREE_TIER_BOOK_LIMIT,
+    };
+  }
+  return null;
+}
 
 /**
  * Add a book to the user's library with the specified reading status.
@@ -110,22 +136,8 @@ export async function addToLibrary(
       }
 
       // Soft-deleted — restoring would increase active count, so check limit
-      const userIsPremium = await isPremium(session.user.id);
-      if (!userIsPremium) {
-        const activeBookCount = await prisma.userBook.count({
-          where: { userId: session.user.id, deletedAt: null },
-        });
-        if (activeBookCount >= FREE_TIER_BOOK_LIMIT) {
-          return {
-            success: false,
-            error: `You've reached the free tier limit of ${FREE_TIER_BOOK_LIMIT} books. Upgrade to premium for unlimited tracking!`,
-            code: 'BOOK_LIMIT_REACHED',
-            premiumStatus: 'FREE',
-            currentBookCount: activeBookCount,
-            maxBooks: FREE_TIER_BOOK_LIMIT,
-          };
-        }
-      }
+      const limitError = await checkBookLimit(session.user.id);
+      if (limitError) return limitError;
 
       // Restore soft-deleted book
       const restored = await prisma.userBook.update({
@@ -143,22 +155,8 @@ export async function addToLibrary(
     }
 
     // New book — check limit for free users
-    const userIsPremium = await isPremium(session.user.id);
-    if (!userIsPremium) {
-      const activeBookCount = await prisma.userBook.count({
-        where: { userId: session.user.id, deletedAt: null },
-      });
-      if (activeBookCount >= FREE_TIER_BOOK_LIMIT) {
-        return {
-          success: false,
-          error: `You've reached the free tier limit of ${FREE_TIER_BOOK_LIMIT} books. Upgrade to premium for unlimited tracking!`,
-          code: 'BOOK_LIMIT_REACHED',
-          premiumStatus: 'FREE',
-          currentBookCount: activeBookCount,
-          maxBooks: FREE_TIER_BOOK_LIMIT,
-        };
-      }
-    }
+    const limitError = await checkBookLimit(session.user.id);
+    if (limitError) return limitError;
 
     // Create UserBook record
     const userBook = await prisma.userBook.create({

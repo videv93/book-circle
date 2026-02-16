@@ -143,7 +143,6 @@ export function BookDetail({ data, initialSessions = [], initialCursor = null }:
 
       <BookDiscussion
         bookId={book.id}
-        bookTitle={book.title}
         authorUserId={authorUserId}
       />
 

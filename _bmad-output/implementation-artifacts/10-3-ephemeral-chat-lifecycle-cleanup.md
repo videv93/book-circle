@@ -1,6 +1,6 @@
 # Story 10.3: Ephemeral Chat Lifecycle & Cleanup
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -173,3 +173,16 @@ Claude Opus 4.6
 - `src/components/features/author-chat/AuthorChatPanel.tsx` (MODIFIED - chatEnded state, cleanup, onChannelCleanup prop)
 - `src/components/features/author-chat/AuthorChatPanel.test.tsx` (MODIFIED - 6 new tests)
 - `src/components/features/presence/ReadingRoomPanel.tsx` (MODIFIED - cleanup on leave/idle-timeout)
+
+### Senior Developer Review
+
+**Date:** 2026-02-16
+**Reviewer:** Claude Opus 4.6 (Adversarial Code Review)
+
+**Issues Found & Fixed:**
+
+1. **M1 — No channel type validation in deleteAuthorChatChannel (Medium):** Added prefix check requiring channel IDs to start with `author-chat-`. Prevents any authenticated user from deleting arbitrary Stream channels (book discussions, etc.) via this endpoint. Added test.
+2. **M2 — Dead `getActiveChannelId` code (Medium):** Removed unused `getActiveChannelId` callback and `getActiveChannelIdRef` ref that were defined but never exposed to the parent component.
+3. **M3 — `activeChatChannelRef` never populated (Medium):** Added `onChannelCreated` callback prop to `AuthorChatPanel` that fires when a channel is created. `ReadingRoomPanel` now uses it to set `activeChatChannelRef.current`, making the leave/idle-timeout cleanup actually functional.
+
+**Verification:** All 23 tests pass (5 deleteAuthorChatChannel + 18 AuthorChatPanel). act() warnings are harmless (pre-existing async state updates).

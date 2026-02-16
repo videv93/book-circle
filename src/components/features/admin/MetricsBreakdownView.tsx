@@ -22,10 +22,6 @@ export function MetricsBreakdownView() {
   const fetchBreakdown = useCallback(async (category: Category, start: string, end: string) => {
     setLoading(true);
     try {
-      const params = new URLSearchParams({ category });
-      if (start) params.set('startDate', start);
-      if (end) params.set('endDate', end);
-
       const { getMetricsBreakdown } = await import('@/actions/admin/getMetricsBreakdown');
       const result = await getMetricsBreakdown(category, start || undefined, end || undefined);
       if (result.success) {

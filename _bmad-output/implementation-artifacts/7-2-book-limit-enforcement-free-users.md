@@ -1,6 +1,6 @@
 # Story 7.2: Book Limit Enforcement for Free Users
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -160,3 +160,17 @@ Claude Opus 4.6
 - `src/actions/books/types.ts` — MODIFIED: Added BookLimitError type, AddToLibraryResult type alias
 - `src/actions/books/addToLibrary.ts` — MODIFIED: Added isPremium check + book count enforcement for free users
 - `src/actions/books/addToLibrary.test.ts` — MODIFIED: Added 9 book limit enforcement tests, updated mocks for isPremium and userBook.count/update
+
+### Senior Developer Review
+
+**Date:** 2026-02-16
+**Reviewer:** Claude Opus 4.6 (Adversarial Code Review)
+
+**Issues Found & Fixed:**
+
+1. **M1 — Duplicate `AddToLibraryInput` type (Medium):** Removed dead `AddToLibraryInput` interface from `types.ts` that duplicated the Zod-inferred type in `addToLibrary.ts`. Updated `index.ts` re-exports.
+2. **M2 — TOCTOU race condition (Medium):** Documented as acceptable for MVP. The count-then-create pattern has a theoretical race window, but for a low-stakes 3-book limit a DB constraint would be over-engineering.
+3. **M3 — Hardcoded `'FREE'` string (Medium):** Changed to use `PremiumStatus.FREE` enum from Prisma, and typed `BookLimitError.premiumStatus` as `PremiumStatus` instead of `string`.
+4. **L2 — Duplicate limit check logic (Low):** Extracted `checkBookLimit()` helper to DRY up the two identical limit check blocks (new book path + restore path).
+
+**Verification:** All 17 tests pass. Typecheck clean (only pre-existing errors).

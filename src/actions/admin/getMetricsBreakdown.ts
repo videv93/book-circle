@@ -43,37 +43,34 @@ export async function getMetricsBreakdown(
     const end = endDate ? new Date(endDate) : new Date();
     end.setUTCHours(23, 59, 59, 999);
 
-    let tableName: string;
-    let dateColumn: string;
+    let rawData: Array<{ date: Date; count: bigint }>;
 
     switch (category) {
       case 'user':
-        tableName = 'users';
-        dateColumn = 'created_at';
+        rawData = await prisma.$queryRaw<Array<{ date: Date; count: bigint }>>`
+          SELECT DATE_TRUNC('day', created_at) as date, COUNT(*) as count
+          FROM users WHERE created_at >= ${start} AND created_at <= ${end}
+          GROUP BY DATE_TRUNC('day', created_at) ORDER BY date ASC`;
         break;
       case 'engagement':
-        tableName = 'reading_sessions';
-        dateColumn = 'started_at';
+        rawData = await prisma.$queryRaw<Array<{ date: Date; count: bigint }>>`
+          SELECT DATE_TRUNC('day', started_at) as date, COUNT(*) as count
+          FROM reading_sessions WHERE started_at >= ${start} AND started_at <= ${end}
+          GROUP BY DATE_TRUNC('day', started_at) ORDER BY date ASC`;
         break;
       case 'social':
-        tableName = 'kudos';
-        dateColumn = 'created_at';
+        rawData = await prisma.$queryRaw<Array<{ date: Date; count: bigint }>>`
+          SELECT DATE_TRUNC('day', created_at) as date, COUNT(*) as count
+          FROM kudos WHERE created_at >= ${start} AND created_at <= ${end}
+          GROUP BY DATE_TRUNC('day', created_at) ORDER BY date ASC`;
         break;
       case 'content':
-        tableName = 'books';
-        dateColumn = 'created_at';
+        rawData = await prisma.$queryRaw<Array<{ date: Date; count: bigint }>>`
+          SELECT DATE_TRUNC('day', created_at) as date, COUNT(*) as count
+          FROM books WHERE created_at >= ${start} AND created_at <= ${end}
+          GROUP BY DATE_TRUNC('day', created_at) ORDER BY date ASC`;
         break;
     }
-
-    const rawData = await prisma.$queryRawUnsafe<Array<{ date: Date; count: bigint }>>(
-      `SELECT DATE_TRUNC('day', "${dateColumn}") as date, COUNT(*) as count
-       FROM "${tableName}"
-       WHERE "${dateColumn}" >= $1 AND "${dateColumn}" <= $2
-       GROUP BY DATE_TRUNC('day', "${dateColumn}")
-       ORDER BY date ASC`,
-      start,
-      end,
-    );
 
     const entries: BreakdownEntry[] = rawData.map((row) => ({
       date: new Date(row.date).toISOString().split('T')[0],

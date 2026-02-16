@@ -9,6 +9,7 @@ import { UserAccountCard } from '@/components/features/admin/UserAccountCard';
 import { UserActivitySection } from '@/components/features/admin/UserActivitySection';
 import { UserSessionsList } from '@/components/features/admin/UserSessionsList';
 import { UserModerationDetail } from '@/components/features/admin/UserModerationDetail';
+import { QuickActionsBar } from '@/components/features/admin/QuickActionsBar';
 import Link from 'next/link';
 
 export const dynamic = 'force-dynamic';
@@ -63,6 +64,8 @@ export default async function UserDetailPage({ params }: UserDetailPageProps) {
         readingStats={detailResult.data.readingStats}
         socialStats={detailResult.data.socialStats}
       />
+
+      <QuickActionsBar userId={userId} userName={detailResult.data.account.name} />
 
       <UserActivitySection
         recentActivity={detailResult.data.recentActivity}

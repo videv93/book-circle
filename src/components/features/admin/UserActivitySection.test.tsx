@@ -5,10 +5,10 @@ import { UserActivitySection } from './UserActivitySection';
 const baseActivity = {
   lastLogin: new Date('2026-02-09T10:30:00Z'),
   recentKudosGiven: [
-    { id: 'k1', receiverId: 'user-2', createdAt: new Date('2026-02-08') },
+    { id: 'k1', receiverId: 'user-2', receiverName: 'Alice', createdAt: new Date('2026-02-08') },
   ],
   recentKudosReceived: [
-    { id: 'k2', giverId: 'user-3', createdAt: new Date('2026-02-07') },
+    { id: 'k2', giverId: 'user-3', giverName: 'Bob', createdAt: new Date('2026-02-07') },
   ],
   currentRoom: null,
 };
@@ -72,7 +72,7 @@ describe('UserActivitySection', () => {
       />
     );
     expect(screen.getByText(/Recent kudos given/)).toBeInTheDocument();
-    expect(screen.getByText(/To user-2/)).toBeInTheDocument();
+    expect(screen.getByText(/To Alice/)).toBeInTheDocument();
   });
 
   it('renders kudos received', () => {
@@ -83,7 +83,7 @@ describe('UserActivitySection', () => {
       />
     );
     expect(screen.getByText(/Recent kudos received/)).toBeInTheDocument();
-    expect(screen.getByText(/From user-3/)).toBeInTheDocument();
+    expect(screen.getByText(/From Bob/)).toBeInTheDocument();
   });
 
   it('renders moderation summary', () => {

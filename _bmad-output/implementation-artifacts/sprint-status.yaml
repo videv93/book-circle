@@ -94,18 +94,18 @@ development_status:
   # Epic 6: Administration & Platform Health
   epic-6: in-progress
   6-1-admin-role-access-control: done
-  6-2-moderation-queue: review
+  6-2-moderation-queue: done
   6-3-content-removal: done
   6-4-user-warnings-suspension: done
   6-5-author-verification-review: done
-  6-6-platform-health-metrics: review
-  6-7-user-session-lookup: review
+  6-6-platform-health-metrics: done
+  6-7-user-session-lookup: done
   epic-6-retrospective: optional
 
   # Epic 7: Premium Schema & Book Limit Enforcement
   epic-7: in-progress
   7-1-premium-data-model-status-utility: done
-  7-2-book-limit-enforcement-free-users: review
+  7-2-book-limit-enforcement-free-users: done
   7-3-upgrade-prompt-premium-ui-hints: done
   epic-7-retrospective: optional
 
@@ -119,7 +119,7 @@ development_status:
   # Epic 9: Stream Integration & Book Discussions
   epic-9: in-progress
   9-1-stream-sdk-setup-user-token-generation: done
-  9-2-book-discussion-thread-display: review
+  9-2-book-discussion-thread-display: done
   9-3-create-discussion-posts-threaded-replies: done
   9-4-discussion-sorting-discovery: done
   epic-9-retrospective: optional
@@ -128,7 +128,7 @@ development_status:
   epic-10: in-progress
   10-1-author-chat-panel-activation: done
   10-2-premium-chat-access-free-user-upgrade-prompt: done
-  10-3-ephemeral-chat-lifecycle-cleanup: review
+  10-3-ephemeral-chat-lifecycle-cleanup: done
   epic-10-retrospective: optional
 
   # Epic 11: Affiliate Monetization

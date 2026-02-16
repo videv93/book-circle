@@ -75,7 +75,7 @@ describe('getUserDetail', () => {
     mockReadingSessionAggregate.mockResolvedValue({ _sum: { duration: 7200 }, _count: 10 });
     mockFollowCount.mockResolvedValue(25);
     mockSessionFindFirst.mockResolvedValue({ createdAt: new Date('2026-02-09') });
-    mockKudosFindMany.mockResolvedValue([]);
+    mockKudosFindMany.mockResolvedValue([]); // empty kudos for both given/received
     mockRoomPresenceFindFirst.mockResolvedValue(null);
     mockWarningCount.mockResolvedValue(1);
     mockSuspensionCount.mockResolvedValue(0);

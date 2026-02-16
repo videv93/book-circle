@@ -34,7 +34,7 @@ describe('deleteAuthorChatChannel', () => {
   it('returns unauthorized when no session', async () => {
     mockGetSession.mockResolvedValue(null);
 
-    const result = await deleteAuthorChatChannel('channel-1');
+    const result = await deleteAuthorChatChannel('author-chat-book-1-uuid');
 
     expect(result).toEqual({ success: false, error: 'Unauthorized' });
     expect(mockChannel).not.toHaveBeenCalled();
@@ -44,6 +44,15 @@ describe('deleteAuthorChatChannel', () => {
     const result = await deleteAuthorChatChannel('');
 
     expect(result).toEqual({ success: false, error: 'Invalid channelId' });
+  });
+
+  it('rejects deletion of non-author-chat channels', async () => {
+    mockGetSession.mockResolvedValue({ user: { id: 'user-1' } });
+
+    const result = await deleteAuthorChatChannel('book-some-discussion-channel');
+
+    expect(result).toEqual({ success: false, error: 'Invalid channel type for deletion' });
+    expect(mockChannel).not.toHaveBeenCalled();
   });
 
   it('deletes channel successfully', async () => {

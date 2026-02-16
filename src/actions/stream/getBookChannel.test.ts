@@ -31,7 +31,7 @@ describe('getBookChannel', () => {
   it('returns error when user is not authenticated', async () => {
     mockGetSession.mockResolvedValue(null);
     const { getBookChannel } = await import('./getBookChannel');
-    const result = await getBookChannel({ bookId: 'book-1', bookTitle: 'Test Book' });
+    const result = await getBookChannel({ bookId: 'book-1' });
     expect(result).toEqual({ success: false, error: 'Unauthorized' });
   });
 
@@ -44,7 +44,7 @@ describe('getBookChannel', () => {
     });
 
     const { getBookChannel } = await import('./getBookChannel');
-    const result = await getBookChannel({ bookId: 'book-1', bookTitle: 'Test Book' });
+    const result = await getBookChannel({ bookId: 'book-1' });
 
     expect(mockChannel).toHaveBeenCalledWith('messaging', 'book-book-1');
     expect(mockWatch).toHaveBeenCalled();
@@ -58,7 +58,7 @@ describe('getBookChannel', () => {
     });
 
     const { getBookChannel } = await import('./getBookChannel');
-    const result = await getBookChannel({ bookId: 'book-1', bookTitle: 'Test Book' });
+    const result = await getBookChannel({ bookId: 'book-1' });
 
     expect(result).toEqual({ success: false, error: 'Failed to get or create book discussion channel' });
   });

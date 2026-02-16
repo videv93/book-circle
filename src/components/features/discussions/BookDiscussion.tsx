@@ -1,21 +1,14 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import {
   Channel,
-  MessageInput,
   MessageList,
-  Thread,
   Window,
-  defaultRenderMessages,
-  isDateSeparatorMessage,
-  isIntroMessage,
-  getGroupStyles,
 } from 'stream-chat-react';
 import type { Channel as ChannelType } from 'stream-chat';
-import type { GroupStyle, RenderMessagesOptions } from 'stream-chat-react';
 import { getBookChannel } from '@/actions/stream';
 import { useChatClient } from './useChatClient';
 import { createDiscussionMessage } from './DiscussionMessage';
@@ -24,64 +17,16 @@ import 'stream-chat-react/dist/css/v2/index.css';
 
 interface BookDiscussionProps {
   bookId: string;
-  bookTitle: string;
   authorUserId?: string | null;
 }
 
-export function BookDiscussion({ bookId, bookTitle, authorUserId }: BookDiscussionProps) {
+export function BookDiscussion({ bookId, authorUserId }: BookDiscussionProps) {
   const client = useChatClient();
   const pathname = usePathname();
   const CustomMessage = useMemo(() => createDiscussionMessage(authorUserId), [authorUserId]);
   const [channel, setChannel] = useState<ChannelType | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [sortMode, setSortMode] = useState<'recent' | 'active'>('recent');
-
-  const activeRenderMessages = useCallback(
-    (options: RenderMessagesOptions) => {
-      const { messages, messageGroupStyles, ...rest } = options;
-
-      // Filter out date separators and intro messages — they are positional
-      // and meaningless after re-sorting by activity
-      const realMessages = messages.filter(
-        (m) => !isDateSeparatorMessage(m) && !isIntroMessage(m),
-      );
-
-      // Sort by thread activity (most recent activity first)
-      const sorted = [...realMessages].sort((a, b) => {
-        const aMsg = a as { reply_count?: number; created_at?: string; updated_at?: string };
-        const bMsg = b as { reply_count?: number; created_at?: string; updated_at?: string };
-        const aTime = (aMsg.reply_count ?? 0) > 0
-          ? new Date(aMsg.updated_at ?? aMsg.created_at ?? 0).getTime()
-          : new Date(aMsg.created_at ?? 0).getTime();
-        const bTime = (bMsg.reply_count ?? 0) > 0
-          ? new Date(bMsg.updated_at ?? bMsg.created_at ?? 0).getTime()
-          : new Date(bMsg.created_at ?? 0).getTime();
-        return bTime - aTime;
-      });
-
-      // Recalculate group styles for the new message order
-      const newGroupStyles: Record<string, GroupStyle> = {};
-      for (let i = 0; i < sorted.length; i++) {
-        const msg = sorted[i];
-        if ('id' in msg) {
-          newGroupStyles[msg.id] = getGroupStyles(
-            msg,
-            sorted[i - 1] ?? ({} as never),
-            sorted[i + 1] ?? ({} as never),
-            false,
-          );
-        }
-      }
-
-      return defaultRenderMessages({
-        messages: sorted,
-        messageGroupStyles: newGroupStyles,
-        ...rest,
-      });
-    },
-    [],
-  );
 
   useEffect(() => {
     if (!client) {
@@ -93,7 +38,7 @@ export function BookDiscussion({ bookId, bookTitle, authorUserId }: BookDiscussi
 
     async function initChannel() {
       try {
-        const result = await getBookChannel({ bookId, bookTitle });
+        const result = await getBookChannel({ bookId });
         if (didCancel) return;
 
         if (!result.success) {
@@ -122,7 +67,7 @@ export function BookDiscussion({ bookId, bookTitle, authorUserId }: BookDiscussi
     return () => {
       didCancel = true;
     };
-  }, [client, bookId, bookTitle]);
+  }, [client, bookId]);
 
   if (loading) {
     return (
@@ -179,39 +124,11 @@ export function BookDiscussion({ bookId, bookTitle, authorUserId }: BookDiscussi
   return (
     <div className="border-t border-border px-4 py-4" data-testid="book-discussion">
       <h3 className="text-sm font-medium text-muted-foreground mb-3">Discussion</h3>
-      <div className="flex gap-1 mb-3" role="group" aria-label="Sort discussions" data-testid="sort-toggle">
-        <button
-          className={`px-3 py-1.5 text-xs font-medium rounded-md min-h-[44px] transition-colors ${
-            sortMode === 'recent'
-              ? 'bg-primary text-primary-foreground'
-              : 'bg-muted text-muted-foreground hover:bg-muted/80'
-          }`}
-          onClick={() => setSortMode('recent')}
-          aria-pressed={sortMode === 'recent'}
-        >
-          Recent
-        </button>
-        <button
-          className={`px-3 py-1.5 text-xs font-medium rounded-md min-h-[44px] transition-colors ${
-            sortMode === 'active'
-              ? 'bg-primary text-primary-foreground'
-              : 'bg-muted text-muted-foreground hover:bg-muted/80'
-          }`}
-          onClick={() => setSortMode('active')}
-          aria-pressed={sortMode === 'active'}
-        >
-          Active
-        </button>
-      </div>
       <div className="str-chat__discussion-wrapper">
         <Channel channel={channel} Message={CustomMessage}>
           <Window>
-            <MessageList
-              renderMessages={sortMode === 'active' ? activeRenderMessages : undefined}
-            />
-            <MessageInput />
+            <MessageList />
           </Window>
-          <Thread />
         </Channel>
       </div>
     </div>

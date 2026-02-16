@@ -26,6 +26,7 @@ interface AuthorChatPanelProps {
   authorPresent: boolean;
   authorUserId?: string;
   authorName?: string;
+  onChannelCreated?: (channelId: string) => void;
   onChannelCleanup?: () => void;
 }
 
@@ -34,6 +35,7 @@ export function AuthorChatPanel({
   authorPresent,
   authorUserId,
   authorName,
+  onChannelCreated,
   onChannelCleanup,
 }: AuthorChatPanelProps) {
   const client = useChatClient();
@@ -143,6 +145,7 @@ export function AuthorChatPanel({
         }
         targetChannelId = result.data.channelId;
         channelIdRef.current = targetChannelId;
+        onChannelCreated?.(targetChannelId);
       }
 
       const ch = currentClient.channel('messaging', targetChannelId);
@@ -154,7 +157,7 @@ export function AuthorChatPanel({
       setError('Chat unavailable');
       setLoading(false);
     }
-  }, [bookId, authorUserId]);
+  }, [bookId, authorUserId, onChannelCreated]);
 
   // Cleanup: delete the ephemeral channel and reset refs
   const cleanupChannel = useCallback(async () => {
@@ -227,13 +230,6 @@ export function AuthorChatPanel({
       }
     };
   }, []);
-
-  // Expose channelId for external cleanup (e.g., ReadingRoomPanel leave)
-  const getActiveChannelId = useCallback(() => channelIdRef.current, []);
-
-  // Store getter on a ref so parent can access it
-  const getActiveChannelIdRef = useRef(getActiveChannelId);
-  getActiveChannelIdRef.current = getActiveChannelId;
 
   if (!authorPresent && !chatEnded) return null;
 

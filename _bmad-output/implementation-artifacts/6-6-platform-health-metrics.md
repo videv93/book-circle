@@ -1,6 +1,6 @@
 # Story 6.6: Platform Health Metrics
 
-Status: review
+Status: done
 
 ## Story
 
@@ -343,7 +343,7 @@ Claude Opus 4.6
 - Created `SparklineChart` client component using lightweight inline SVG polyline (6 tests)
 - Created `TrendIndicator` component with directional arrows and color coding (4 tests)
 - Created `AnomalyBadge` component with red alert styling and ARIA status role (3 tests)
-- Created `getMetricsBreakdown` server action with `$queryRawUnsafe` for per-category daily breakdown with date range filtering (7 tests)
+- Created `getMetricsBreakdown` server action with `$queryRaw` tagged templates for per-category daily breakdown with date range filtering (7 tests)
 - Created `MetricsBreakdownView` client component with category tabs and data table (4 tests)
 - Created `DateRangeFilter` client component using URL search params via `useRouter`/`useSearchParams` (4 tests)
 - Created CSV export via API Route at `/api/admin/export/metrics/route.ts` with auth protection
@@ -354,6 +354,7 @@ Claude Opus 4.6
 ### File List
 
 New files:
+- src/actions/admin/metricsTrendsUtils.ts
 - src/actions/admin/getPlatformMetrics.ts
 - src/actions/admin/getPlatformMetrics.test.ts
 - src/actions/admin/getMetricsTrends.ts
@@ -383,3 +384,17 @@ Modified files:
 - src/app/(admin)/admin/page.tsx
 - _bmad-output/implementation-artifacts/sprint-status.yaml
 - _bmad-output/implementation-artifacts/6-6-platform-health-metrics.md
+
+### Senior Developer Review (AI)
+
+**Reviewer:** vitr | **Date:** 2026-02-16 | **Outcome:** Approved (after fixes)
+
+**Issues Found & Fixed (6):**
+- **H1 [FIXED]** SQL injection risk: Replaced `$queryRawUnsafe` with `$queryRaw` tagged templates in `getMetricsBreakdown.ts`
+- **H2 [FIXED]** Missing "Metrics" card on admin dashboard — added `BarChart3` icon card linking to `/admin/metrics`
+- **M1 [FIXED]** `metricsTrendsUtils.ts` was missing from story File List — added
+- **M2 [FIXED]** CSV export now supports date range filtering via query params from `DateRangeFilter`
+- **M3 [FIXED]** CSV export now properly escapes fields containing commas/quotes/newlines
+- **M4 [FIXED]** Removed dead `URLSearchParams` construction code in `MetricsBreakdownView`
+
+**Low Issues (accepted):** L1/L2 — `TrendIndicator` and `AnomalyBadge` lack `'use client'` directive but function correctly as imported by client components.

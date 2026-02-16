@@ -1,6 +1,6 @@
 # Story 9.2: Book Discussion Thread Display
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -221,3 +221,19 @@ Claude Opus 4.6
 ### Change Log
 
 - 2026-02-12: Implemented Story 9.2 — Book discussion thread display with Stream Chat integration, author badge distinction, loading/error states, and 8 new tests (all passing)
+
+### Senior Developer Review
+
+**Date:** 2026-02-16
+**Reviewer:** Claude Opus 4.6 (Adversarial Code Review)
+
+**Issues Found & Fixed:**
+
+1. **H1 — Dead `bookTitle` parameter (High):** Removed unused `bookTitle` from `GetBookChannelInput` interface, `BookDiscussionProps`, and all callers/tests. The parameter was accepted but never used after channel metadata was removed due to Stream type constraints.
+2. **M1 — Scope creep: MessageInput, Thread, sort toggle (Medium):** Removed `<MessageInput />`, `<Thread />`, sort toggle UI, and 60+ lines of `activeRenderMessages` logic. These belong to Stories 9.3 (posting/replies) and 9.4 (sorting). Removed 9 associated sort toggle tests. Story 9.2 is display-only.
+
+**Downgraded/Dismissed:**
+- M2 (ActionResult import from @/types): Valid — `@/types` is the shared ActionResult location, consistent with all stream actions.
+- M3 (direct ChatContext access): By design — `useChatContext()` throws outside `<Chat>` provider; custom hook intentionally uses `useContext` to return null gracefully.
+
+**Verification:** All 33 tests pass (3 getBookChannel + 5 BookDiscussion + 25 BookDetail).

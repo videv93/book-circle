@@ -38,14 +38,19 @@ export async function flagContent(input: unknown): Promise<ActionResult<Moderati
       // For reading room descriptions, contentId is the bookId
       const book = await prisma.book.findUnique({
         where: { id: validated.contentId },
-        select: { id: true },
+        select: { id: true, authorClaims: { where: { status: 'APPROVED' }, select: { userId: true }, take: 1 } },
       });
       if (!book) {
         return { success: false, error: 'Content not found' };
       }
-      // Reading room descriptions don't have a specific user owner yet
-      // Use a placeholder - the admin will identify the user from context
-      reportedUserId = 'system';
+      // Attribute to approved author if available, otherwise use reporter as context
+      // (admin will identify the responsible user from the content itself)
+      reportedUserId = book.authorClaims[0]?.userId ?? session.user.id;
+
+      // Prevent self-flagging if the reported user is the current user
+      if (reportedUserId === session.user.id && book.authorClaims[0]?.userId === session.user.id) {
+        return { success: false, error: 'You cannot flag your own content' };
+      }
     }
 
     if (!reportedUserId) {
@@ -79,7 +84,7 @@ export async function flagContent(input: unknown): Promise<ActionResult<Moderati
 
     return { success: true, data: moderationItem };
   } catch (error) {
-    if (error instanceof Error && error.name === 'ZodError') {
+    if (error && typeof error === 'object' && 'issues' in error) {
       return { success: false, error: 'Invalid input' };
     }
     console.error('flagContent error:', error);

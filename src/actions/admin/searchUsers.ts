@@ -89,7 +89,7 @@ export async function searchUsers(
       actionType: 'SEARCH_USERS',
       targetId: 'N/A',
       targetType: 'User',
-      details: { query: validated.query, resultCount: results.length },
+      details: { query: validated.query, resultCount: total },
     });
 
     return {

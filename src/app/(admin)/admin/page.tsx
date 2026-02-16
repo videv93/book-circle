@@ -1,4 +1,4 @@
-import { BookCheck, Shield, Users, Search } from 'lucide-react';
+import { BookCheck, Shield, Users, Search, BarChart3 } from 'lucide-react';
 import { getDashboardStats } from '@/actions/admin/getDashboardStats';
 import { DashboardStatCard } from '@/components/features/admin/DashboardStatCard';
 import { AdminActivityLog } from '@/components/features/admin/AdminActivityLog';
@@ -20,7 +20,7 @@ export default async function AdminDashboardPage() {
     <div className="container max-w-4xl mx-auto px-4 py-6">
       <h2 className="text-xl font-semibold mb-6">Dashboard</h2>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
         <DashboardStatCard
           label="Pending Claims"
           count={pendingClaimsCount}
@@ -43,6 +43,12 @@ export default async function AdminDashboardPage() {
           count={totalUsersCount}
           icon={Search}
           href="/admin/users"
+        />
+        <DashboardStatCard
+          label="Metrics"
+          count={totalUsersCount}
+          icon={BarChart3}
+          href="/admin/metrics"
         />
       </div>
 

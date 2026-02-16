@@ -387,6 +387,7 @@ export function ReadingRoomPanel({ bookId, className }: ReadingRoomPanelProps) {
         authorPresent={authorInRoom}
         authorUserId={authorPresence?.authorId}
         authorName={authorPresence?.authorName}
+        onChannelCreated={(channelId) => { activeChatChannelRef.current = channelId; }}
         onChannelCleanup={() => { activeChatChannelRef.current = null; }}
       />
 

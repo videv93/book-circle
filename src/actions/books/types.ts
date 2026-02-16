@@ -1,4 +1,4 @@
-import type { Book, UserBook, ReadingStatus } from '@prisma/client';
+import type { Book, UserBook, ReadingStatus, PremiumStatus } from '@prisma/client';
 
 /**
  * Standard action result type for server actions
@@ -32,7 +32,7 @@ export type BookLimitError = {
   success: false;
   error: string;
   code: 'BOOK_LIMIT_REACHED';
-  premiumStatus: string;
+  premiumStatus: PremiumStatus;
   currentBookCount: number;
   maxBooks: number;
 };
@@ -45,17 +45,3 @@ export type AddToLibraryResult =
   | { success: false; error: string }
   | BookLimitError;
 
-/**
- * Input type for adding a book to library
- */
-export interface AddToLibraryInput {
-  title: string;
-  authors: string[];
-  isbn10?: string;
-  isbn13?: string;
-  coverUrl?: string;
-  pageCount?: number;
-  publishedYear?: number;
-  description?: string;
-  status: 'CURRENTLY_READING' | 'FINISHED' | 'WANT_TO_READ';
-}

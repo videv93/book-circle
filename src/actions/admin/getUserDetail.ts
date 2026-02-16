@@ -36,11 +36,13 @@ export interface UserDetailResult {
     recentKudosGiven: Array<{
       id: string;
       receiverId: string;
+      receiverName: string | null;
       createdAt: Date;
     }>;
     recentKudosReceived: Array<{
       id: string;
       giverId: string;
+      giverName: string | null;
       createdAt: Date;
     }>;
     currentRoom: { bookId: string; joinedAt: Date } | null;
@@ -127,13 +129,13 @@ export async function getUserDetail(
         where: { giverId: userId },
         take: 10,
         orderBy: { createdAt: 'desc' },
-        select: { id: true, receiverId: true, createdAt: true },
+        select: { id: true, receiverId: true, createdAt: true, receiver: { select: { name: true } } },
       }),
       prisma.kudos.findMany({
         where: { receiverId: userId },
         take: 10,
         orderBy: { createdAt: 'desc' },
-        select: { id: true, giverId: true, createdAt: true },
+        select: { id: true, giverId: true, createdAt: true, giver: { select: { name: true } } },
       }),
       prisma.roomPresence.findFirst({
         where: { userId, leftAt: null },
@@ -175,8 +177,18 @@ export async function getUserDetail(
         },
         recentActivity: {
           lastLogin: lastSession?.createdAt ?? null,
-          recentKudosGiven,
-          recentKudosReceived,
+          recentKudosGiven: recentKudosGiven.map((k: { id: string; receiverId: string; createdAt: Date; receiver: { name: string | null } }) => ({
+            id: k.id,
+            receiverId: k.receiverId,
+            receiverName: k.receiver?.name ?? null,
+            createdAt: k.createdAt,
+          })),
+          recentKudosReceived: recentKudosReceived.map((k: { id: string; giverId: string; createdAt: Date; giver: { name: string | null } }) => ({
+            id: k.id,
+            giverId: k.giverId,
+            giverName: k.giver?.name ?? null,
+            createdAt: k.createdAt,
+          })),
           currentRoom: roomPresence,
         },
         moderationSummary: {

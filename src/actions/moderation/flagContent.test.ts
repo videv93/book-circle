@@ -136,14 +136,14 @@ describe('flagContent', () => {
   });
 
   it('creates moderation item for reading room description', async () => {
-    mockBookFindUnique.mockResolvedValue({ id: 'book-1' });
+    mockBookFindUnique.mockResolvedValue({ id: 'book-1', authorClaims: [{ userId: 'author-1' }] });
     mockModItemFindUnique.mockResolvedValue(null);
     const createdItem = {
       id: 'mod-2',
       contentType: 'READING_ROOM_DESCRIPTION',
       contentId: 'book-1',
       reporterId: 'user-1',
-      reportedUserId: 'system',
+      reportedUserId: 'author-1',
       reason: 'Spoilers in reading room description',
       status: 'PENDING',
     };

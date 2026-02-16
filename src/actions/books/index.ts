@@ -1,4 +1,4 @@
-export { addToLibrary } from './addToLibrary';
+export { addToLibrary, type AddToLibraryInput } from './addToLibrary';
 export { updateReadingStatus } from './updateReadingStatus';
 export { removeFromLibrary } from './removeFromLibrary';
 export { restoreToLibrary } from './restoreToLibrary';
@@ -16,5 +16,4 @@ export type {
   ActionResult,
   UserBookWithBook,
   UserBookStatus,
-  AddToLibraryInput,
 } from './types';

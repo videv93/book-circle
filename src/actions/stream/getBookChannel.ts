@@ -8,7 +8,6 @@ import type { ActionResult } from '@/types';
 
 interface GetBookChannelInput {
   bookId: string;
-  bookTitle: string;
 }
 
 export async function getBookChannel(

@@ -37,7 +37,7 @@ export function UserActivitySection({ recentActivity, moderationSummary }: UserA
               <div className="space-y-1">
                 {recentActivity.recentKudosGiven.map((k) => (
                   <div key={k.id} className="text-xs text-muted-foreground">
-                    To {k.receiverId} - {new Date(k.createdAt).toLocaleDateString()}
+                    To {k.receiverName ?? k.receiverId} - {new Date(k.createdAt).toLocaleDateString()}
                   </div>
                 ))}
               </div>
@@ -52,7 +52,7 @@ export function UserActivitySection({ recentActivity, moderationSummary }: UserA
               <div className="space-y-1">
                 {recentActivity.recentKudosReceived.map((k) => (
                   <div key={k.id} className="text-xs text-muted-foreground">
-                    From {k.giverId} - {new Date(k.createdAt).toLocaleDateString()}
+                    From {k.giverName ?? k.giverId} - {new Date(k.createdAt).toLocaleDateString()}
                   </div>
                 ))}
               </div>

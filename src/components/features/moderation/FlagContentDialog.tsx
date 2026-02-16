@@ -35,6 +35,14 @@ export function FlagContentDialog({
 
   const isValid = reason.trim().length >= 10;
 
+  function handleOpenChange(open: boolean) {
+    if (!open) {
+      setReason('');
+      setError('');
+    }
+    onOpenChange(open);
+  }
+
   async function handleSubmit() {
     if (!isValid) {
       setError('Reason must be at least 10 characters');
@@ -66,7 +74,7 @@ export function FlagContentDialog({
   }
 
   return (
-    <AlertDialog open={open} onOpenChange={onOpenChange}>
+    <AlertDialog open={open} onOpenChange={handleOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Report Content</AlertDialogTitle>

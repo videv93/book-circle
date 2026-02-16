@@ -2,6 +2,12 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { ExportMetricsButton } from './ExportMetricsButton';
 
+vi.mock('next/navigation', () => ({
+  useSearchParams: vi.fn(() => ({
+    get: vi.fn(() => null),
+  })),
+}));
+
 describe('ExportMetricsButton', () => {
   it('renders export button', () => {
     render(<ExportMetricsButton />);

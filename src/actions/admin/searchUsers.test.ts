@@ -143,7 +143,7 @@ describe('searchUsers', () => {
       actionType: 'SEARCH_USERS',
       targetId: 'N/A',
       targetType: 'User',
-      details: { query: 'test@example.com', resultCount: 1 },
+      details: { query: 'test@example.com', resultCount: 1 }, // total matching users
     });
   });
 });
