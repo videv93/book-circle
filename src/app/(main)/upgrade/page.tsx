@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useTransition } from 'react';
+import { Suspense, useEffect, useState, useTransition } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Sparkles, Loader2, BookOpen, CheckCircle } from 'lucide-react';
@@ -14,6 +14,21 @@ import { PREMIUM_PRICE_AMOUNT } from '@/lib/config/constants';
 const formattedPrice = `$${(PREMIUM_PRICE_AMOUNT / 100).toFixed(2)}`;
 
 export default function UpgradePage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex flex-col items-center justify-center gap-6 px-8 py-16">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          <p className="text-sm text-muted-foreground">Loading...</p>
+        </div>
+      }
+    >
+      <UpgradePageContent />
+    </Suspense>
+  );
+}
+
+function UpgradePageContent() {
   const [isPending, startTransition] = useTransition();
   const [isPremium, setIsPremium] = useState<boolean | null>(null);
   const searchParams = useSearchParams();

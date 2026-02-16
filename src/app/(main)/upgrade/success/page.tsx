@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { Suspense, useEffect, useState, useCallback, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -20,6 +20,23 @@ const MAX_POLL_ATTEMPTS = 5;
 const POLL_INTERVAL_MS = 3000;
 
 export default function UpgradeSuccessPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex flex-col items-center justify-center gap-6 px-8 py-16">
+          <Loader2 className="h-16 w-16 animate-spin text-amber-500" aria-hidden />
+          <h1 className="text-2xl font-semibold text-foreground">
+            Verifying Your Payment...
+          </h1>
+        </div>
+      }
+    >
+      <UpgradeSuccessContent />
+    </Suspense>
+  );
+}
+
+function UpgradeSuccessContent() {
   const searchParams = useSearchParams();
   const checkoutId = searchParams.get('checkout_id');
 

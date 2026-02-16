@@ -23,7 +23,8 @@ vi.mock('@/actions/admin/logAdminAction', () => ({
   logAdminAction: vi.fn(),
 }));
 
-import { getSessionHistory, parseUserAgent } from './getSessionHistory';
+import { getSessionHistory } from './getSessionHistory';
+import { parseUserAgent } from '@/lib/user-agent-utils';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { logAdminAction } from '@/actions/admin/logAdminAction';

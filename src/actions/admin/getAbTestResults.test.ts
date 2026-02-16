@@ -21,7 +21,8 @@ vi.mock('@/lib/admin', () => ({
   }),
 }));
 
-import { getAbTestResults, calculateChiSquared, getSignificanceLevel } from './getAbTestResults';
+import { getAbTestResults } from './getAbTestResults';
+import { calculateChiSquared, getSignificanceLevel } from '@/lib/ab-test-utils';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 
