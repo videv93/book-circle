@@ -19,7 +19,7 @@ const StartBuddyReadButton = lazy(() =>
 );
 import { SessionList } from '@/components/features/sessions/SessionList';
 import { AuthorEngagementMetrics } from '@/components/features/authors/AuthorEngagementMetrics';
-import { BookDiscussion } from '@/components/features/discussions';
+import Link from 'next/link';
 import type { BookDetailData } from '@/actions/books';
 import type { BookSearchResult } from '@/services/books/types';
 import type { ReadingStatus, ReadingSession } from '@prisma/client';
@@ -141,10 +141,14 @@ export function BookDetail({ data, initialSessions = [], initialCursor = null }:
         </div>
       )}
 
-      <BookDiscussion
-        bookId={book.id}
-        authorUserId={authorUserId}
-      />
+      <div className="border-t border-border px-4 py-4">
+        <Link
+          href={`/book/${book.id}/discussion`}
+          className="inline-flex items-center justify-center w-full rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground min-h-[44px] hover:bg-primary/90 transition-colors"
+        >
+          Join Discussion
+        </Link>
+      </div>
 
       <BookDetailActions
         book={bookSearchResult}

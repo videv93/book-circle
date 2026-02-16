@@ -19,9 +19,10 @@ import 'stream-chat-react/dist/css/v2/index.css';
 interface BookDiscussionProps {
   bookId: string;
   authorUserId?: string | null;
+  fullScreen?: boolean;
 }
 
-export function BookDiscussion({ bookId, authorUserId }: BookDiscussionProps) {
+export function BookDiscussion({ bookId, authorUserId, fullScreen = false }: BookDiscussionProps) {
   const client = useChatClient();
   const pathname = usePathname();
   const CustomMessage = useMemo(() => createDiscussionMessage(authorUserId), [authorUserId]);
@@ -123,9 +124,14 @@ export function BookDiscussion({ bookId, authorUserId }: BookDiscussionProps) {
   }
 
   return (
-    <div className="border-t border-border px-4 py-4" data-testid="book-discussion">
-      <h3 className="text-sm font-medium text-muted-foreground mb-3">Discussion</h3>
-      <div className="str-chat__discussion-wrapper">
+    <div
+      className={fullScreen ? 'flex flex-col flex-1 min-h-0' : 'border-t border-border px-4 py-4'}
+      data-testid="book-discussion"
+    >
+      {!fullScreen && (
+        <h3 className="text-sm font-medium text-muted-foreground mb-3">Discussion</h3>
+      )}
+      <div className={fullScreen ? 'flex flex-col flex-1 min-h-0' : 'str-chat__discussion-wrapper'}>
         <Channel channel={channel} Message={CustomMessage}>
           <Window>
             <MessageList />
