@@ -4,6 +4,11 @@ import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { getDailyProgress } from '@/actions/goals';
 import { getStreakData, checkStreakStatus } from '@/actions/streaks';
+import {
+  getUserCurrentlyReading,
+  getActiveBooksWithReaders,
+  getPopularBooks,
+} from '@/actions/home';
 import { HomeContent } from './HomeContent';
 
 export default async function HomePage() {
@@ -62,6 +67,24 @@ export default async function HomePage() {
     }
   }
 
+  // Fetch homepage section data in parallel
+  const [currentlyReadingResult, activeBooksResult, popularBooksResult] =
+    await Promise.all([
+      getUserCurrentlyReading(),
+      getActiveBooksWithReaders(),
+      getPopularBooks(),
+    ]);
+
+  const currentlyReading = currentlyReadingResult.success
+    ? currentlyReadingResult.data
+    : [];
+  const activeBooks = activeBooksResult.success
+    ? activeBooksResult.data
+    : [];
+  const popularBooks = popularBooksResult.success
+    ? popularBooksResult.data
+    : [];
+
   return (
     <main className="container mx-auto px-4 py-8 max-w-2xl">
       <HomeContent
@@ -74,6 +97,10 @@ export default async function HomePage() {
         freezeUsedToday={freezeUsedToday}
         isStreakAtRisk={isStreakAtRisk}
         freezesAvailable={freezesAvailable}
+        currentlyReading={currentlyReading}
+        hasMoreCurrentlyReading={currentlyReading.length >= 4}
+        activeBooks={activeBooks}
+        popularBooks={popularBooks}
       />
     </main>
   );

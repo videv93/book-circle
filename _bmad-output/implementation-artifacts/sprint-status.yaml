@@ -138,3 +138,9 @@ development_status:
   11-3-buddy-read-purchase-flow: review
   11-4-affiliate-analytics-dashboard: done
   epic-11-retrospective: optional
+
+  # Epic 12: Homepage Enhancement
+  epic-12: in-progress
+  12-1-homepage-book-collections: in-progress
+  12-2-live-author-chat-indicator: backlog
+  epic-12-retrospective: optional

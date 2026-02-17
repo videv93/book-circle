@@ -13,6 +13,9 @@ vi.mock('next/navigation', () => ({
     forward: vi.fn(),
     prefetch: vi.fn(),
   }),
+  useSearchParams: () => ({
+    get: () => null,
+  }),
 }));
 
 // Mock next/image
@@ -96,6 +99,13 @@ vi.mock('@/actions/auth/logout', () => ({
   logout: vi.fn(),
 }));
 
+// Mock home section components
+vi.mock('@/components/features/home', () => ({
+  ContinueReadingSection: () => <div data-testid="continue-reading-section" />,
+  ReadingNowSection: () => <div data-testid="reading-now-section" />,
+  DiscoverSection: () => <div data-testid="discover-section" />,
+}));
+
 const defaultProps = {
   userName: 'Alice' as string | null,
   userEmail: 'alice@example.com',
@@ -104,6 +114,10 @@ const defaultProps = {
   minutesRead: 0,
   currentStreak: 0,
   freezeUsedToday: false,
+  currentlyReading: [],
+  hasMoreCurrentlyReading: false,
+  activeBooks: [],
+  popularBooks: [],
 };
 
 describe('HomeContent', () => {
