@@ -1,11 +1,25 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
+import { MessageSquare } from 'lucide-react';
 
-import { listPosts } from '@/actions/discussions';
+import { createPost, listPosts } from '@/actions/discussions';
 import type { PostSummary } from '@/actions/discussions';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent } from '@/components/ui/card';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+  SheetFooter,
+  SheetClose,
+} from '@/components/ui/sheet';
 import { PostCard } from './PostCard';
 
 interface PostListProps {
@@ -39,13 +53,34 @@ function PostListInner({ bookId, authorUserId }: PostListProps) {
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [cursor, setCursor] = useState<string | null>(null);
-  const didFetch = useRef(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [title, setTitle] = useState('');
+  const [body, setBody] = useState('');
+
+  const handleCreatePost = async () => {
+    setSubmitting(true);
+    setSubmitError(null);
+    const result = await createPost({ bookId, title, body });
+    if (result.success) {
+      setTitle('');
+      setBody('');
+      setSheetOpen(false);
+      const refreshed = await listPosts({ bookId });
+      if (refreshed.success) {
+        setPosts(refreshed.data.posts);
+        setCursor(refreshed.data.nextCursor);
+      }
+    } else {
+      setSubmitError(result.error);
+    }
+    setSubmitting(false);
+  };
 
   useEffect(() => {
-    if (didFetch.current) return;
-    didFetch.current = true;
-
     let cancelled = false;
+    setLoading(true);
     listPosts({ bookId }).then((result) => {
       if (cancelled) return;
       if (result.success) {
@@ -101,19 +136,22 @@ function PostListInner({ bookId, authorUserId }: PostListProps) {
 
   return (
     <div className="border-t border-border px-4 py-4" data-testid="discussions-section">
-      <h3 className="text-sm font-medium text-muted-foreground mb-3">Discussions</h3>
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-sm font-medium text-muted-foreground">Discussions</h3>
+        <Button size="sm" onClick={() => setSheetOpen(true)} data-testid="new-post-button">
+          New Post
+        </Button>
+      </div>
       {posts.length === 0 ? (
-        <div className="text-center py-6" data-testid="discussions-empty">
-          <p className="text-sm text-muted-foreground mb-3">
-            No discussions yet &mdash; start one!
+        <div
+          className="flex flex-col items-center justify-center gap-3 py-12"
+          data-testid="discussions-empty"
+        >
+          <MessageSquare className="h-12 w-12 text-muted-foreground" />
+          <p className="text-sm font-medium text-foreground">No discussions yet</p>
+          <p className="text-center text-sm text-muted-foreground">
+            Be the first to start a conversation about this book.
           </p>
-          <button
-            disabled
-            className="inline-flex items-center justify-center min-h-[44px] px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium opacity-50 cursor-not-allowed"
-            data-testid="new-post-button"
-          >
-            New Post
-          </button>
         </div>
       ) : (
         <>
@@ -141,6 +179,57 @@ function PostListInner({ bookId, authorUserId }: PostListProps) {
           )}
         </>
       )}
+
+      <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+        <SheetContent side="bottom" data-testid="new-post-sheet">
+          <SheetHeader>
+            <SheetTitle>New Post</SheetTitle>
+            <SheetDescription>Start a discussion about this book.</SheetDescription>
+          </SheetHeader>
+          <div className="flex flex-col gap-4 px-4">
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="post-title">Title</Label>
+              <Input
+                id="post-title"
+                placeholder="What do you want to discuss?"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                maxLength={200}
+                data-testid="post-title-input"
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="post-body">Body</Label>
+              <Textarea
+                id="post-body"
+                placeholder="Share your thoughts..."
+                value={body}
+                onChange={(e) => setBody(e.target.value)}
+                maxLength={5000}
+                rows={4}
+                data-testid="post-body-input"
+              />
+            </div>
+            {submitError && (
+              <p className="text-sm text-destructive" data-testid="post-submit-error">
+                {submitError}
+              </p>
+            )}
+          </div>
+          <SheetFooter>
+            <SheetClose asChild>
+              <Button variant="outline">Cancel</Button>
+            </SheetClose>
+            <Button
+              onClick={handleCreatePost}
+              disabled={submitting || !title.trim() || !body.trim()}
+              data-testid="post-submit-button"
+            >
+              {submitting ? 'Posting...' : 'Post'}
+            </Button>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
