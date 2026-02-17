@@ -1,4 +1,5 @@
 export { OAuthButtons } from './OAuthButtons';
+export { EmailPasswordForm } from './EmailPasswordForm';
 export {
   isApplePrivateRelayEmail,
 } from './types';
