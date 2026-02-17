@@ -65,10 +65,10 @@ vi.mock('@/actions/sessions', () => ({
   saveReadingSession: vi.fn(),
 }));
 
-// Mock BookDiscussion
+// Mock PostList
 vi.mock('@/components/features/discussions', () => ({
-  BookDiscussion: ({ bookId }: { bookId: string }) => (
-    <div data-testid="mock-book-discussion">Discussion for {bookId}</div>
+  PostList: ({ bookId }: { bookId: string }) => (
+    <div data-testid="mock-post-list">Discussion for {bookId}</div>
   ),
 }));
 

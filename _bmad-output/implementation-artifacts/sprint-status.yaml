@@ -116,12 +116,12 @@ development_status:
   8-3-premium-unlock-flow-post-payment: done
   epic-8-retrospective: optional
 
-  # Epic 9: Stream Integration & Book Discussions
+  # Epic 9: Stream Integration & Book Discussions (Reddit-style rework)
   epic-9: in-progress
   9-1-stream-sdk-setup-user-token-generation: done
-  9-2-book-discussion-thread-display: done
-  9-3-create-discussion-posts-threaded-replies: done
-  9-4-discussion-sorting-discovery: done
+  9-2-book-discussion-post-list: done
+  9-3-create-discussion-posts-nested-comments: backlog
+  9-4-discussion-sorting-pagination: backlog
   epic-9-retrospective: optional
 
   # Epic 10: Author Chat in Reading Rooms

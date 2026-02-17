@@ -164,6 +164,8 @@ model User {
   buddyReadsCreated        BuddyRead[]
   buddyReadInvitesSent     BuddyReadInvitation[] @relation("invites_sent")
   buddyReadInvitesReceived BuddyReadInvitation[] @relation("invites_received")
+  discussionPosts          DiscussionPost[]      @relation("UserDiscussionPosts")
+  discussionComments       DiscussionComment[]   @relation("UserDiscussionComments")
 
   @@map("users")
 }
@@ -229,8 +231,9 @@ model Book {
   readingSessions ReadingSession[]
   roomPresences   RoomPresence[]
   authorClaims    AuthorClaim[]
-  affiliateLinks  AffiliateLink[]
-  buddyReads      BuddyRead[]
+  affiliateLinks    AffiliateLink[]
+  buddyReads        BuddyRead[]
+  discussionPosts   DiscussionPost[]
 
   @@index([isbn10])
   @@index([isbn13])
@@ -596,4 +599,40 @@ model BuddyReadInvitation {
   @@index([inviteeId])
   @@index([inviterId])
   @@map("buddy_read_invitations")
+}
+
+model DiscussionPost {
+  id        String   @id @default(cuid())
+  bookId    String   @map("book_id")
+  authorId  String   @map("author_id")
+  title     String
+  body      String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  book     Book              @relation(fields: [bookId], references: [id])
+  author   User              @relation("UserDiscussionPosts", fields: [authorId], references: [id])
+  comments DiscussionComment[]
+
+  @@index([bookId, createdAt])
+  @@map("discussion_posts")
+}
+
+model DiscussionComment {
+  id        String   @id @default(cuid())
+  postId    String   @map("post_id")
+  authorId  String   @map("author_id")
+  parentId  String?  @map("parent_id")
+  body      String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  post    DiscussionPost     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author  User               @relation("UserDiscussionComments", fields: [authorId], references: [id])
+  parent  DiscussionComment? @relation("CommentReplies", fields: [parentId], references: [id])
+  replies DiscussionComment[] @relation("CommentReplies")
+
+  @@index([postId, createdAt])
+  @@index([parentId])
+  @@map("discussion_comments")
 }

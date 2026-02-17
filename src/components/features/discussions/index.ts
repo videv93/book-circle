@@ -1,1 +1,2 @@
-export { BookDiscussion } from './BookDiscussion';
+export { PostList } from './PostList';
+export { PostCard } from './PostCard';

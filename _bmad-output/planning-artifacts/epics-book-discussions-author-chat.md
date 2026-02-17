@@ -18,11 +18,11 @@ This document provides the complete epic and story breakdown for flappy-bird-1 B
 ### Functional Requirements
 
 FR40: Users can view a discussion section on any book's detail page
-FR41: Users can create a new discussion post on a book
-FR42: Users can reply to a specific discussion post (threaded replies)
+FR41: Users can create a new discussion post with title and body on a book
+FR42: Users can reply with nested comments on discussion posts (Reddit-style threading)
 FR43: All users (free and premium) can read and post in discussions
-FR44: Discussions can be sorted by recency or activity
-FR45: Discussion posts display author name, timestamp, and user avatar
+FR44: Discussion posts can be sorted by Recent, Active, or Top
+FR45: Discussion posts and comments display author name, timestamp, and user avatar
 FR46: Authors are visually distinguished when posting in book discussions
 FR47: A group chat panel activates in a reading room when an author enters
 FR48: Only premium users can see and participate in author chat
@@ -32,15 +32,15 @@ FR51: Chat panel closes and channel messages are purged when the author leaves t
 FR52: Free users see a premium upgrade prompt when author chat is active
 FR53: Chat messages are ephemeral — channel deleted after author leaves
 FR54: Server generates Stream user tokens for authenticated users
-FR55: Stream Chat React components are used for both discussion and chat UI
+FR55: Stream Chat React components are used for author chat UI; custom components for book discussions
 
 ### NonFunctional Requirements
 
 NFR6: Discussion posts must load within 2 seconds on 4G
 NFR7: Author chat messages must deliver within 1 second (Stream real-time)
-NFR8: Discussion threads use Stream's built-in pagination
+NFR8: Discussion posts use cursor-based pagination (20 per page)
 NFR9: Chat must gracefully degrade if Stream is unavailable
-NFR10: Discussion and chat content sanitized via Stream's built-in moderation
+NFR10: Discussion content moderated via existing admin moderation queue; chat content sanitized via Stream
 
 ### Additional Requirements
 
@@ -48,8 +48,7 @@ NFR10: Discussion and chat content sanitized via Stream's built-in moderation
 - Environment variables: `STREAM_API_KEY`, `STREAM_API_SECRET`
 - Server-side Stream client in `src/lib/stream.ts` for token generation and admin operations
 - Stream token generation endpoint or server action for authenticated users
-- No new Prisma models for discussions or chat — Stream handles all storage
-- One Stream channel per book for discussions (type: `messaging` or `team`)
+- New Prisma models: `DiscussionPost` and `DiscussionComment` for book discussions
 - One ephemeral Stream channel per reading room for author chat (created on author join, deleted on leave)
 - Premium gating uses existing `isPremium(userId)` utility
 - Keep Pusher for reading room presence detection only
@@ -80,7 +79,7 @@ NFR10: Discussion and chat content sanitized via Stream's built-in moderation
 ## Epic List
 
 ### Epic 9: Stream Integration & Book Discussions
-Users can discuss books with other readers through persistent threaded discussions on every book page, driving book discovery and social engagement. Stream Chat SDK provides the infrastructure for both this epic and future author chat.
+Users can discuss books with other readers through Reddit-style threaded discussions on every book page, where each book acts as a "subreddit" with titled posts and nested comments. Stream Chat SDK is set up for Epic 10 (Author Chat); discussions use custom Prisma models.
 **FRs covered:** FR40, FR41, FR42, FR43, FR44, FR45, FR46, FR54, FR55
 **NFRs covered:** NFR6, NFR8, NFR10
 
@@ -91,13 +90,16 @@ Premium users can chat with authors in real-time when an author enters a reading
 
 ## Epic 9: Stream Integration & Book Discussions
 
-Users can discuss books with other readers through persistent threaded discussions on every book page, driving book discovery and social engagement. Stream Chat SDK provides the infrastructure for both this epic and future author chat.
+Users can discuss books with other readers through Reddit-style threaded discussions on every book page, where each book acts as a "subreddit" with titled discussion posts and nested comment threads. Stream Chat SDK is set up in this epic for use by Epic 10 (Author Chat). Book discussions use custom Prisma models (DiscussionPost, DiscussionComment) for a natural forum-style experience.
+
+**FRs covered:** FR40, FR41, FR42, FR43, FR44, FR45, FR46, FR54, FR55
+**NFRs covered:** NFR6, NFR10
 
 ### Story 9.1: Stream SDK Setup & User Token Generation
 
 As a registered user,
 I want the app to connect me to Stream Chat securely,
-So that I can use discussion and chat features with my authenticated identity.
+So that I can use chat features with my authenticated identity.
 
 **Acceptance Criteria:**
 
@@ -116,88 +118,108 @@ So that I can use discussion and chat features with my authenticated identity.
 **Given** an unauthenticated user
 **When** they access a page with Stream features
 **Then** Stream client is not initialized
-**And** discussions are visible in read-only mode (no posting)
 
-### Story 9.2: Book Discussion Thread Display
+*Note: Stream SDK is used for Epic 10 (Author Chat) only. Book discussions use custom Prisma models.*
+
+### Story 9.2: Book Discussion Post List
 
 As a reader browsing a book,
-I want to see a discussion section on the book's detail page,
-So that I can read what other readers are saying about this book.
+I want to see a list of discussion posts on the book's detail page,
+So that I can browse topics other readers are discussing about this book.
 
 **Acceptance Criteria:**
 
 **Given** a user navigates to a book detail page (`/book/[id]`)
 **When** the page renders
-**Then** a "Discussion" section is displayed below book details
-**And** the section loads the Stream channel for this book (channel ID: `book-{bookId}`)
-**And** if no channel exists yet, it is created automatically (type: `messaging`)
+**Then** a "Discussions" section is displayed below book details
+**And** the section shows a list of discussion posts for this book
+**And** each post displays: title, author name, author avatar, timestamp, and comment count
 
-**Given** a book discussion channel has messages
+**Given** a book has discussion posts
 **When** the discussion section loads
-**Then** messages are displayed with author name, avatar, and timestamp
-**And** messages are sorted by most recent by default
-**And** Stream's built-in pagination loads older messages on scroll (NFR8)
+**Then** posts are sorted by most recent by default
+**And** posts are paginated via cursor-based pagination (20 per page)
 
-**Given** a message was posted by a verified book author
-**When** it is displayed in the discussion
-**Then** the author's name has a visual distinction (author badge/highlight) (FR46)
+**Given** a book has no discussion posts
+**When** the section loads
+**Then** an empty state is shown: "No discussions yet — start one!"
+**And** a "New Post" CTA button is displayed
+
+**Given** a post was created by a verified book author
+**When** it is displayed in the post list
+**Then** the author's name has a golden author badge styling (FR46)
 
 **Given** the discussion section is loading
-**When** Stream is fetching messages
-**Then** a skeleton/loading state is shown
+**When** posts are being fetched
+**Then** skeleton post cards are shown
 **And** content loads within 2 seconds on 4G (NFR6)
 
-### Story 9.3: Create Discussion Posts & Threaded Replies
+*Creates: DiscussionPost model (id, bookId, authorId, title, body, createdAt, updatedAt), PostList component, PostCard component, listPosts server action*
+
+### Story 9.3: Create Discussion Posts & Nested Comments
 
 As a reader,
-I want to post in a book's discussion and reply to other posts,
-So that I can share my thoughts and engage in conversation about the book.
+I want to create discussion posts and reply with nested comments,
+So that I can start and participate in book conversations.
 
 **Acceptance Criteria:**
 
-**Given** an authenticated user (free or premium) viewing a book discussion
-**When** they type in the message composer and submit
-**Then** a new discussion post is created in the Stream channel
-**And** the post appears immediately in the thread
+**Given** an authenticated user (free or premium) viewing a book's discussions
+**When** they tap "New Post"
+**Then** a form appears with title (required) and body (required) fields
+**And** submitting creates a DiscussionPost record linked to the book
+**And** the post appears at the top of the post list
 **And** the post displays the user's name, avatar, and timestamp (FR45)
 
-**Given** an authenticated user viewing an existing discussion post
-**When** they click "Reply"
-**Then** a threaded reply interface opens (Stream's built-in threading)
-**And** they can type and submit a reply to that specific post (FR42)
-**And** the reply count is shown on the parent message
+**Given** an authenticated user viewing a discussion post detail
+**When** they tap "Reply" on the post
+**Then** a comment input appears
+**And** submitting creates a DiscussionComment linked to the post (postId set, parentId null)
+**And** the comment appears in the comment thread below the post
+
+**Given** an authenticated user viewing an existing comment
+**When** they tap "Reply" on that comment
+**Then** a comment input appears
+**And** submitting creates a DiscussionComment with parentId set to the parent comment
+**And** the reply appears nested under the parent comment
 
 **Given** an unauthenticated user viewing a discussion
-**When** they attempt to post or reply
+**When** they attempt to create a post or comment
 **Then** they are prompted to log in
 
-**Given** a user submits a post
-**When** the message is processed
-**Then** Stream's built-in content sanitization is applied (NFR10)
+**Given** a verified author creates a post or comment
+**When** their content is displayed
+**Then** their name shows the golden author badge (FR46)
 
-### Story 9.4: Discussion Sorting & Discovery
+*Creates: DiscussionComment model (id, postId, authorId, parentId, body, createdAt, updatedAt), CreatePostForm component, PostDetail component, CommentThread component, CommentInput component, createPost and createComment server actions*
+
+### Story 9.4: Discussion Sorting & Pagination
 
 As a reader,
-I want to sort discussions by recency or activity,
+I want to sort discussion posts by different criteria,
 So that I can find the most relevant conversations.
 
 **Acceptance Criteria:**
 
-**Given** a user viewing a book discussion
+**Given** a user viewing a book's discussions
 **When** they select "Recent" sort option
-**Then** messages are sorted by creation time, newest first
+**Then** posts are sorted by creation time, newest first
 
-**Given** a user viewing a book discussion
+**Given** a user viewing a book's discussions
 **When** they select "Active" sort option
-**Then** messages are sorted by most recent reply activity (threads with recent replies surface first)
+**Then** posts are sorted by most recent comment activity (posts with recent comments surface first)
 
-**Given** a book discussion with many messages
-**When** the user scrolls
-**Then** pagination loads additional messages seamlessly (NFR8)
+**Given** a user viewing a book's discussions
+**When** they select "Top" sort option
+**Then** posts are sorted by comment count, most comments first
 
-**Given** the Stream service is unavailable
+**Given** a discussion list with many posts
+**When** the user scrolls to the bottom
+**Then** the next page loads via cursor-based pagination (20 per page)
+
+**Given** the database query fails
 **When** the discussion section attempts to load
-**Then** a graceful "Discussions unavailable" message is shown (NFR9)
+**Then** a graceful "Discussions unavailable" message is shown
 **And** the rest of the book detail page functions normally
 
 ## Epic 10: Author Chat in Reading Rooms
