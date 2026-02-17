@@ -21,7 +21,8 @@ export async function getPopularBooks(): Promise<ActionResult<PopularBook[]>> {
 
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
-    // Get books with reader counts
+    // Get books with reader counts, ordered by most readers first
+    // Fetch a reasonable window (top 50) to score and re-rank with session data
     const booksWithReaders = await prisma.book.findMany({
       include: {
         _count: {
@@ -32,6 +33,10 @@ export async function getPopularBooks(): Promise<ActionResult<PopularBook[]>> {
           },
         },
       },
+      orderBy: {
+        userBooks: { _count: 'desc' },
+      },
+      take: 50,
     });
 
     // Get recent session counts per book

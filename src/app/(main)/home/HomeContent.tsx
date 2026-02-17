@@ -4,9 +4,7 @@ import { useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { logout } from '@/actions/auth/logout';
 import { DailyGoalSetter, DailyGoalProgress } from '@/components/features/goals';
 import { StreakRing, FreezeCountBadge, StreakFreezePrompt } from '@/components/features/streaks';
 import {
@@ -57,11 +55,6 @@ export function HomeContent({
       window.history.replaceState({}, '', '/home');
     }
   }, [searchParams]);
-
-  const handleSignOut = async () => {
-    toast.success('Signed out successfully');
-    await logout();
-  };
 
   const handleGoalSet = () => {
     router.refresh();
@@ -146,10 +139,6 @@ export function HomeContent({
 
       {/* Discover Section (hidden if < 3 books) */}
       <DiscoverSection books={popularBooks} />
-
-      <Button variant="outline" onClick={handleSignOut}>
-        Sign Out
-      </Button>
     </div>
   );
 }

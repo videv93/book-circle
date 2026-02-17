@@ -33,7 +33,6 @@ export async function getUserCurrentlyReading(): Promise<
       include: {
         book: true,
       },
-      take: 4,
     });
 
     // Get most recent session for each book
@@ -70,7 +69,8 @@ export async function getUserCurrentlyReading(): Promise<
       return bTime - aTime;
     });
 
-    return { success: true, data: books };
+    // Return top 4 after sorting
+    return { success: true, data: books.slice(0, 4) };
   } catch (error) {
     console.error('Failed to fetch currently reading books:', error);
     return { success: false, error: 'Failed to load currently reading books' };

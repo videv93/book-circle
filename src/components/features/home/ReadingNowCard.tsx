@@ -4,6 +4,8 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { BookOpen } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { PresenceAvatarStack } from '@/components/features/presence/PresenceAvatarStack';
+import type { PresenceMember } from '@/stores/usePresenceStore';
 import type { ActiveBook } from '@/actions/home';
 
 interface ReadingNowCardProps {
@@ -12,8 +14,13 @@ interface ReadingNowCardProps {
 }
 
 export function ReadingNowCard({ activeBook, className }: ReadingNowCardProps) {
-  const { book, readerCount, hasAuthorPresence } = activeBook;
+  const { book, readerCount, hasAuthorPresence, readers } = activeBook;
   const identifier = book.isbn13 || book.isbn10 || book.id;
+
+  // Build PresenceMember map from readers data
+  const membersMap = new Map<string, PresenceMember>(
+    (readers ?? []).map((r) => [r.id, { id: r.id, name: r.name, avatarUrl: r.avatarUrl, isAuthor: r.isAuthor }]),
+  );
 
   return (
     <Link
@@ -50,6 +57,11 @@ export function ReadingNowCard({ activeBook, className }: ReadingNowCardProps) {
         {book.author}
       </p>
 
+      {membersMap.size > 0 && (
+        <div className="mt-1">
+          <PresenceAvatarStack members={membersMap} maxVisible={3} size={20} />
+        </div>
+      )}
       <div className="mt-1 flex items-center gap-1">
         <span className="text-[10px] text-amber-600">
           {readerCount} reading now

@@ -1,6 +1,6 @@
 # Story 12.1: Homepage Book Collections
 
-Status: ready-for-dev
+Status: in-progress
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -83,26 +83,26 @@ so that **I can quickly continue reading or find my next book without navigating
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Create server-side data fetching functions (AC: 1, 4, 7)
-  - [ ] 1.1 Create `getUserCurrentlyReading()` action — fetch user's CURRENTLY_READING books with last session time, sorted by most recent session, limit 4
-  - [ ] 1.2 Create `getActiveBooksWithReaders()` action — fetch books with active RoomPresence (leftAt=NULL, lastActiveAt within 30 min), include reader count and author presence flag, sorted by reader count desc
-  - [ ] 1.3 Create `getPopularBooks()` action — fetch books by (UserBook count + recent ReadingSession count), limit 6, exclude user's own library books from checkmark logic at component level
-- [ ] Task 2: Create homepage section components (AC: 1-8)
-  - [ ] 2.1 Create `ContinueReadingSection` component — renders user's currently reading books as cards with cover, title, author, last session time, link to book detail
-  - [ ] 2.2 Create `ContinueReadingCard` component — compact book card variant with last session timestamp
-  - [ ] 2.3 Create `ReadingNowSection` component — horizontally scrollable cards with PresenceAvatarStack and reader count, golden glow when author present
-  - [ ] 2.4 Create `ReadingNowCard` component — book card with presence indicators and optional author glow
-  - [ ] 2.5 Create `DiscoverSection` component — horizontally scrollable popular book cards with library checkmark overlay
-  - [ ] 2.6 Create `DiscoverBookCard` component — compact book card with optional checkmark for "already in library"
-  - [ ] 2.7 Create skeleton components for each section: `ContinueReadingSkeleton`, `ReadingNowSkeleton`, `DiscoverSkeleton`
-- [ ] Task 3: Integrate sections into homepage (AC: 9)
-  - [ ] 3.1 Update `page.tsx` server component to fetch all new data in parallel
-  - [ ] 3.2 Update `HomeContent.tsx` to accept and render new sections below streak ring
-  - [ ] 3.3 Remove sign-out button from main content (move to profile page if not already there)
-- [ ] Task 4: Empty states and edge cases (AC: 3, 6, 8)
-  - [ ] 4.1 "Find your next book" empty state for Continue Reading
-  - [ ] 4.2 Hide Reading Now section when no active readers
-  - [ ] 4.3 Hide Discover section when fewer than 3 books exist
+- [x] Task 1: Create server-side data fetching functions (AC: 1, 4, 7)
+  - [x] 1.1 Create `getUserCurrentlyReading()` action — fetch user's CURRENTLY_READING books with last session time, sorted by most recent session, limit 4
+  - [x] 1.2 Create `getActiveBooksWithReaders()` action — fetch books with active RoomPresence (leftAt=NULL, lastActiveAt within 30 min), include reader count and author presence flag, sorted by reader count desc
+  - [x] 1.3 Create `getPopularBooks()` action — fetch books by (UserBook count + recent ReadingSession count), limit 6, exclude user's own library books from checkmark logic at component level
+- [x] Task 2: Create homepage section components (AC: 1-8)
+  - [x] 2.1 Create `ContinueReadingSection` component — renders user's currently reading books as cards with cover, title, author, last session time, link to book detail
+  - [x] 2.2 Create `ContinueReadingCard` component — compact book card variant with last session timestamp
+  - [x] 2.3 Create `ReadingNowSection` component — horizontally scrollable cards with PresenceAvatarStack and reader count, golden glow when author present
+  - [x] 2.4 Create `ReadingNowCard` component — book card with presence indicators and optional author glow
+  - [x] 2.5 Create `DiscoverSection` component — horizontally scrollable popular book cards with library checkmark overlay
+  - [x] 2.6 Create `DiscoverBookCard` component — compact book card with optional checkmark for "already in library"
+  - [x] 2.7 Create skeleton components for each section: `ContinueReadingSkeleton`, `ReadingNowSkeleton`, `DiscoverSkeleton`
+- [x] Task 3: Integrate sections into homepage (AC: 9)
+  - [x] 3.1 Update `page.tsx` server component to fetch all new data in parallel
+  - [x] 3.2 Update `HomeContent.tsx` to accept and render new sections below streak ring
+  - [x] 3.3 Remove sign-out button from main content (move to profile page if not already there)
+- [x] Task 4: Empty states and edge cases (AC: 3, 6, 8)
+  - [x] 4.1 "Find your next book" empty state for Continue Reading
+  - [x] 4.2 Hide Reading Now section when no active readers
+  - [x] 4.3 Hide Discover section when fewer than 3 books exist
 - [ ] Task 5: Tests (AC: all)
   - [ ] 5.1 Unit tests for each new server action
   - [ ] 5.2 Component tests for each section (rendering, empty states, skeleton states)
@@ -235,9 +235,31 @@ Reference `AuthorShimmerBadge` styling. For the card border glow:
 ## Dev Agent Record
 
 ### Agent Model Used
+Claude Opus 4.6
 
 ### Debug Log References
 
 ### Completion Notes List
+- Tasks 1-4 implemented, Task 5 (tests) partially done (existing test updated, new tests not yet written)
+- Code review fixes applied: sort-before-slice in getUserCurrentlyReading, query limit in getPopularBooks, auth check in getActiveBooksWithReaders, PresenceAvatarStack added to ReadingNowCard, sign-out button removed from homepage
+- Skeleton components created but not wired into Suspense boundaries (server-side fetch architecture means no client loading state)
+- AC10 (skeleton loading with 200ms delay) deferred — requires architectural change to client-side fetching or Suspense boundaries
 
 ### File List
+- src/actions/home/getUserCurrentlyReading.ts (NEW)
+- src/actions/home/getActiveBooksWithReaders.ts (NEW)
+- src/actions/home/getPopularBooks.ts (NEW)
+- src/actions/home/index.ts (NEW)
+- src/components/features/home/ContinueReadingCard.tsx (NEW)
+- src/components/features/home/ContinueReadingSection.tsx (NEW)
+- src/components/features/home/ContinueReadingSkeleton.tsx (NEW)
+- src/components/features/home/ReadingNowCard.tsx (NEW)
+- src/components/features/home/ReadingNowSection.tsx (NEW)
+- src/components/features/home/ReadingNowSkeleton.tsx (NEW)
+- src/components/features/home/DiscoverBookCard.tsx (NEW)
+- src/components/features/home/DiscoverSection.tsx (NEW)
+- src/components/features/home/DiscoverSkeleton.tsx (NEW)
+- src/components/features/home/index.ts (NEW)
+- src/app/(main)/home/page.tsx (MODIFIED)
+- src/app/(main)/home/HomeContent.tsx (MODIFIED)
+- src/app/(main)/home/HomeContent.test.tsx (MODIFIED)

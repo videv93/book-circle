@@ -94,11 +94,6 @@ vi.mock('sonner', () => ({
   },
 }));
 
-// Mock auth logout
-vi.mock('@/actions/auth/logout', () => ({
-  logout: vi.fn(),
-}));
-
 // Mock home section components
 vi.mock('@/components/features/home', () => ({
   ContinueReadingSection: () => <div data-testid="continue-reading-section" />,
@@ -167,10 +162,10 @@ describe('HomeContent', () => {
     expect(screen.getByTestId('goal-section')).toBeInTheDocument();
   });
 
-  it('renders sign out button', () => {
+  it('does not render sign out button (moved to profile)', () => {
     render(<HomeContent {...defaultProps} />);
 
-    expect(screen.getByRole('button', { name: /sign out/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /sign out/i })).not.toBeInTheDocument();
   });
 
   // Streak integration tests
