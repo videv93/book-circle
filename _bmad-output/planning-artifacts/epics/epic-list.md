@@ -46,7 +46,7 @@ Admins can moderate content, manage users, verify authors, and monitor platform 
 
 ## Post-MVP: Mobile Platform
 
-## Epic 7: NestJS API Backend
+## Epic 13: NestJS API Backend
 Build a REST API backend using NestJS that exposes the same business logic as the web app's Server Actions, authenticated via JWT tokens.
 
 **Covers:** All existing FRs (FR1-FR39) as REST endpoints
@@ -58,11 +58,11 @@ Build a REST API backend using NestJS that exposes the same business logic as th
 - Pusher integration for real-time events
 - API documentation (OpenAPI/Swagger)
 
-## Epic 8: React Native Mobile App
+## Epic 14: React Native Mobile App
 Build native iOS and Android app using React Native, consuming the NestJS API.
 
 **Covers:** FR1-FR33 (reader + author features, no admin)
-**Dependencies:** Epic 7 (NestJS API)
+**Dependencies:** Epic 13 (NestJS API)
 **Key stories:**
 - React Native project setup (Expo or bare workflow)
 - Navigation structure (tab-based, matching web app)
@@ -75,7 +75,7 @@ Build native iOS and Android app using React Native, consuming the NestJS API.
 - Native push notifications (APNs + FCM)
 - App Store and Play Store submission
 
-## Epic 9: Mobile-Web Feature Parity & Polish
+## Epic 15: Mobile-Web Feature Parity & Polish
 Ensure consistent experience across platforms and handle platform-specific concerns.
 
 **Covers:** Cross-platform testing, platform-specific UX polish
