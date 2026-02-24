@@ -99,6 +99,8 @@ _This document builds collaboratively through step-by-step discovery. Sections a
 | Streak calculation | HIGH | Time-zone edge cases, midnight boundaries, freeze mechanics |
 | Offline sync | MEDIUM-HIGH | Service Worker mocking, IndexedDB, conflict resolution |
 | OAuth flow | MEDIUM | Third-party dependency, test environment strategy |
+| Shared database (post-MVP) | MEDIUM | Two backends (Next.js + NestJS) sharing PostgreSQL — connection pool limits, migration ownership, schema drift risk |
+| Dual auth systems (post-MVP) | MEDIUM | Better Auth (web) + JWT (mobile) against same user table — session consistency, token invalidation |
 
 ## Starter Template Evaluation
 
@@ -175,6 +177,37 @@ npm install -D @types/node
 | Environment Config | .env.local + Vercel UI | Standard approach, per-environment secrets |
 | Monitoring | Vercel Analytics + Mixpanel + Sentry | Performance, user analytics, error tracking |
 | Test Database | Docker PostgreSQL | Matches Railway exactly, free for CI |
+
+### Mobile Platform Strategy (Post-MVP)
+
+**Decision:** Native iOS + Android via React Native, backed by NestJS API
+
+**Architecture Overview:**
+
+| Component | Technology | Notes |
+|-----------|-----------|-------|
+| Mobile frontend | React Native | Shared codebase for iOS + Android |
+| Mobile API | NestJS | REST API with JWT auth |
+| Auth | JWT tokens | Separate from web's Better Auth cookie sessions |
+| Database | PostgreSQL (shared) | Same database as web app |
+| ORM | Prisma | Shared schema, used by both Next.js and NestJS |
+| Real-time | Pusher (native SDK) | Same Pusher channels as web |
+| Push notifications | APNs + FCM | Native push via Pusher Beams or OneSignal |
+
+**Shared Database Strategy:**
+- Single PostgreSQL instance serves both Next.js and NestJS
+- Prisma schema is the single source of truth
+- Both backends use Prisma client with connection pooling
+- Schema migrations owned by one repo (recommend web monorepo)
+
+**Auth Strategy:**
+- Web: Better Auth (cookies/sessions) — unchanged
+- Mobile: NestJS issues JWT tokens against same User table
+- Shared user identity across platforms via common `users` table
+- Token refresh mechanism for mobile sessions
+
+**Key Design Principle:**
+Build the web MVP without mobile compromises. When Phase 2 begins, the NestJS API should replicate Server Action logic as REST endpoints rather than refactoring the web app.
 
 ### Data Architecture
 

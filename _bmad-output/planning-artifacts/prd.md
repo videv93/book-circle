@@ -327,9 +327,9 @@ Authors *inhabit* the same digital spaces as readers, rather than being present 
 ### Project-Type Overview
 
 **Type:** Consumer Social SaaS with Creator Features
-**Model:** Web-first responsive application
+**Model:** Web-first responsive application, native mobile post-MVP
 **Revenue:** Free MVP (monetization post-launch)
-**Architecture:** Next.js monolith with managed services
+**Architecture:** Next.js monolith (web) + NestJS API + React Native (mobile, post-MVP)
 
 ### Data Model
 
@@ -358,11 +358,14 @@ Authors *inhabit* the same digital spaces as readers, rather than being present 
 
 | Component | Choice | Rationale |
 |-----------|--------|-----------|
-| Framework | Next.js 14+ (App Router) | SSR, API routes, single codebase |
-| ORM | Prisma | Type-safe, migrations, great DX |
-| Database | PostgreSQL (Supabase/Railway) | Managed, includes auth options |
-| Real-time | Pusher Channels | Managed, free tier, zero maintenance |
-| Hosting | Vercel | Zero-config, edge functions, preview deploys |
+| Web Framework | Next.js 14+ (App Router) | SSR, API routes, single codebase |
+| Mobile Framework | React Native (post-MVP) | Native iOS + Android from shared codebase |
+| Mobile API | NestJS (post-MVP) | JWT-based REST API for native clients |
+| ORM | Prisma | Type-safe, migrations, shared across backends |
+| Database | PostgreSQL (Supabase/Railway) | Managed, single source of truth for web + mobile |
+| Real-time | Pusher Channels | Managed, SDKs for both web and React Native |
+| Web Hosting | Vercel | Zero-config, edge functions, preview deploys |
+| Mobile API Hosting | Railway / Fly.io (post-MVP) | Node.js hosting for NestJS |
 | Analytics | Mixpanel | Event tracking, funnels |
 
 ### Architecture Pattern: Hybrid Presence
@@ -411,9 +414,17 @@ Authors *inhabit* the same digital spaces as readers, rather than being present 
 - Author presence is enhancement, not proof point
 
 **Resource Requirements:**
+
+*MVP (Web):*
 - 1-2 full-stack developers (Next.js proficient)
 - 1 designer (part-time, UI/UX)
 - Estimated MVP timeline: 6-8 weeks
+
+*Phase 2 (Mobile):*
+- 1 backend developer (NestJS/Node.js)
+- 1-2 React Native developers
+- 1 designer (mobile UX patterns)
+- Estimated timeline: 8-12 weeks after MVP
 
 ### MVP Feature Set (Phase 1)
 
@@ -446,14 +457,16 @@ Authors *inhabit* the same digital spaces as readers, rather than being present 
 
 ### Post-MVP Roadmap
 
-**Phase 2 - Growth (Month 3-6):**
+**Phase 2 - Native Mobile & Growth (Month 3-6):**
+- NestJS API backend for mobile clients (JWT-based auth)
+- React Native app for iOS and Android (feature parity with web MVP)
+- Native push notifications (APNs + FCM)
 - Chapter discussions (spoiler-free social)
 - Enhanced author dashboard
 - Reading clubs
-- Streak leaderboards
-- Mobile PWA optimization
 
 **Phase 3 - Expansion (Month 6-12):**
+- Streak leaderboards
 - Comprehension quizzes
 - Author-certified badges
 - Collectible book creatures
