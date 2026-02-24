@@ -1,5 +1,6 @@
 'use client';
 
+import { Suspense } from 'react';
 import { usePathname } from 'next/navigation';
 import { AppShell } from '@/components/layout';
 import { SuspensionGuard } from '@/components/features/admin/SuspensionGuard';
@@ -46,7 +47,9 @@ export default function MainLayout({
   return (
     <SuspensionGuard>
       <StreamChatProvider>
-        <AppShell title={title}>{children}</AppShell>
+        <AppShell title={title}>
+          <Suspense>{children}</Suspense>
+        </AppShell>
       </StreamChatProvider>
     </SuspensionGuard>
   );

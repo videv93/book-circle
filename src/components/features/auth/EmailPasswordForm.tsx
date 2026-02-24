@@ -12,17 +12,13 @@ import { signIn } from '@/lib/auth-client';
 import { authClient } from '@/lib/auth-client';
 import { logError } from '@/lib/error-logging';
 
-const signInSchema = z.object({
+const formSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
   password: z.string().min(8, 'Password must be at least 8 characters'),
+  name: z.string(),
 });
 
-const signUpSchema = signInSchema.extend({
-  name: z.string().min(1, 'Name is required'),
-});
-
-type SignInInput = z.infer<typeof signInSchema>;
-type SignUpInput = z.infer<typeof signUpSchema>;
+type FormInput = z.infer<typeof formSchema>;
 
 interface EmailPasswordFormProps {
   callbackUrl?: string;
@@ -35,15 +31,14 @@ export function EmailPasswordForm({ callbackUrl }: EmailPasswordFormProps) {
   const router = useRouter();
 
   const isSignUp = mode === 'signup';
-  const schema = isSignUp ? signUpSchema : signInSchema;
 
   const {
     register,
     handleSubmit,
     formState: { errors },
     reset,
-  } = useForm<SignUpInput>({
-    resolver: zodResolver(schema),
+  } = useForm<FormInput>({
+    resolver: zodResolver(formSchema),
     mode: 'onBlur',
     defaultValues: {
       email: '',
@@ -52,12 +47,16 @@ export function EmailPasswordForm({ callbackUrl }: EmailPasswordFormProps) {
     },
   });
 
-  const onSubmit = async (data: SignUpInput) => {
+  const onSubmit = async (data: FormInput) => {
     try {
       setIsSubmitting(true);
       setServerError(null);
 
       if (isSignUp) {
+        if (!data.name.trim()) {
+          setServerError('Name is required');
+          return;
+        }
         const result = await authClient.signUp.email({
           email: data.email,
           password: data.password,

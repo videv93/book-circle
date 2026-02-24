@@ -12,7 +12,7 @@ import { UserModerationDetail } from '@/components/features/admin/UserModeration
 import { QuickActionsBar } from '@/components/features/admin/QuickActionsBar';
 import Link from 'next/link';
 
-export const dynamic = 'force-dynamic';
+// MIGRATED: Removed export const dynamic = 'force-dynamic' — dynamic by default with Cache Components
 
 interface UserDetailPageProps {
   params: Promise<{ userId: string }>;

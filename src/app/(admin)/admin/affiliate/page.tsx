@@ -11,7 +11,7 @@ import { AffiliateAbTestPanel } from '@/components/features/admin/AffiliateAbTes
 import { DateRangeFilter } from '@/components/features/admin/DateRangeFilter';
 import { ExportAffiliateButton } from '@/components/features/admin/ExportAffiliateButton';
 
-export const dynamic = 'force-dynamic';
+// MIGRATED: Removed export const dynamic = 'force-dynamic' — dynamic by default with Cache Components
 
 interface AffiliatePageProps {
   searchParams: Promise<{ startDate?: string; endDate?: string }>;

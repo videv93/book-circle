@@ -5,7 +5,7 @@ import type { MetricRow } from '@/components/features/admin/MetricsCategoryCard'
 import type { MetricsTrends } from '@/actions/admin/getMetricsTrends';
 import { MetricsBreakdownView } from '@/components/features/admin/MetricsBreakdownView';
 
-export const dynamic = 'force-dynamic';
+// MIGRATED: Removed export const dynamic = 'force-dynamic' — dynamic by default with Cache Components
 
 export default async function MetricsPage() {
   const [metricsResult, trendsResult] = await Promise.all([
