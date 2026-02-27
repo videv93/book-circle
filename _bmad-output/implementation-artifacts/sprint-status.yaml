@@ -147,7 +147,7 @@ development_status:
 
   # Epic 13: NestJS API Backend (Post-MVP Mobile)
   epic-13: in-progress
-  13-1-nestjs-project-setup-prisma-integration: ready-for-dev
+  13-1-nestjs-project-setup-prisma-integration: in-progress
   13-2-jwt-authentication: ready-for-dev
   13-3-rest-endpoints-core-features: ready-for-dev
   13-4-pusher-realtime-integration: ready-for-dev
