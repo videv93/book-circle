@@ -239,6 +239,7 @@ export default async function Home() {
           <div className="flex flex-wrap justify-center gap-8 text-sm font-medium text-stone-500 dark:text-stone-400">
             <Link href="/privacy" className="transition-colors hover:text-primary">Privacy Policy</Link>
             <Link href="/terms" className="transition-colors hover:text-primary">Terms of Service</Link>
+            <Link href="/faq" className="transition-colors hover:text-primary">FAQ</Link>
             <Link href="/contact" className="transition-colors hover:text-primary">Contact Us</Link>
           </div>
           <p className="text-sm text-stone-400">© 2024 Book Circle. All rights reserved.</p>
